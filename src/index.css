@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;450;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap');
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand — deep professional navy, anchored to the Momentum Logistics emblem (#003848) */
+  --color-brand-50: #f4f8fb;
+  --color-brand-100: #e8f0f5;
+  --color-brand-200: #d2e1ea;
+  --color-brand-300: #aec9d6;
+  --color-brand-400: #7cabc0;
+  --color-brand-500: #498eab;
+  --color-brand-600: #32758f;
+  --color-brand-700: #1d5b72;
+  --color-brand-800: #0b475b;
+  --color-brand-900: #003848;
+  --color-brand-950: #02202c;
+
+  /* Teal accent — anchored to the emblem's cargo-ship teal (#007080); overrides Tailwind's default teal scale */
+  --color-teal-50: #f0f8f9;
+  --color-teal-100: #deeff2;
+  --color-teal-200: #bae2e8;
+  --color-teal-300: #81ceda;
+  --color-teal-400: #35bfd4;
+  --color-teal-500: #139aae;
+  --color-teal-600: #007080;
+  --color-teal-700: #006170;
+  --color-teal-800: #044752;
+  --color-teal-900: #07333c;
+  --color-teal-950: #051e24;
+
+  /* Success / green accent — anchored to the emblem's delivery-truck green (#008838); overrides Tailwind's default emerald scale */
+  --color-emerald-50: #f0f9f4;
+  --color-emerald-100: #ddf3e7;
+  --color-emerald-200: #b1e7ca;
+  --color-emerald-300: #72daa2;
+  --color-emerald-400: #27ce75;
+  --color-emerald-500: #0da554;
+  --color-emerald-600: #008838;
+  --color-emerald-700: #007a3d;
+  --color-emerald-800: #04582f;
+  --color-emerald-900: #063c23;
+  --color-emerald-950: #042417;
+
+  /* Canvas / surfaces */
+  --color-canvas: #f5f7fa;
+  --color-canvas-alt: #eef1f6;
+  --color-surface: #ffffff;
+
+  /* Shadows — soft, low-contrast elevation */
+  --shadow-xs: 0 1px 2px 0 rgb(15 30 60 / 0.04);
+  --shadow-card: 0 1px 2px 0 rgb(15 30 60 / 0.04), 0 1px 8px -2px rgb(15 30 60 / 0.06);
+  --shadow-card-hover: 0 4px 16px -4px rgb(15 30 60 / 0.10), 0 2px 6px -2px rgb(15 30 60 / 0.06);
+  --shadow-popover: 0 12px 32px -8px rgb(15 30 60 / 0.18), 0 4px 12px -4px rgb(15 30 60 / 0.08);
+  --shadow-modal: 0 24px 60px -12px rgb(10 20 40 / 0.28), 0 8px 24px -8px rgb(10 20 40 / 0.14);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  --animate-fade-in: fade-in 0.35s ease-out both;
+  --animate-scale-in: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+@layer base {
+  * {
+    border-color: theme(--color-slate-200);
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-brand-950);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  ::selection {
+    background-color: var(--color-brand-200);
+    color: var(--color-brand-950);
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #c7cfdb;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #a9b4c4;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  .skeleton {
+    background: linear-gradient(90deg, #eef1f6 0px, #f7f8fa 40px, #eef1f6 80px);
+    background-size: 800px 100%;
+    animation: var(--animate-shimmer);
+  }
+}
