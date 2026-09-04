@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { collection } from './db.ts';
+import { collection } from './db.js';
 import {
   COLLECTIONS,
   type Attribution,
@@ -8,12 +8,12 @@ import {
   type ServiceType,
   type SubmissionDoc,
   type SubmissionType,
-} from './models.ts';
-import { nextRef } from './ids.ts';
-import { isBusinessEmail, normalizeEmail, normalizePhone } from './validation.ts';
-import { scoreLead } from './leadScoring.ts';
-import { logActivity, countActivities } from './activity.ts';
-import { email as emailService, internalLeadNotificationEmail } from './email.ts';
+} from './models.js';
+import { nextRef } from './ids.js';
+import { isBusinessEmail, normalizeEmail, normalizePhone } from './validation.js';
+import { scoreLead } from './leadScoring.js';
+import { logActivity, countActivities } from './activity.js';
+import { email as emailService, internalLeadNotificationEmail } from './email.js';
 
 export interface LeadIntake {
   name: string;

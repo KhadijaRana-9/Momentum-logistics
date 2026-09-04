@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { getDb, collection, ensureIndexes } from '../_lib/db.ts';
-import { COLLECTIONS, type UserDoc } from '../_lib/models.ts';
-import { badRequest, forbidden, json, route } from '../_lib/http.ts';
-import { env } from '../_lib/env.ts';
-import { hashPassword } from '../_lib/auth.ts';
-import { validate } from '../_lib/validation.ts';
-import { writeAudit } from '../_lib/audit.ts';
+import { getDb, collection, ensureIndexes } from '../_lib/db.js';
+import { COLLECTIONS, type UserDoc } from '../_lib/models.js';
+import { badRequest, forbidden, json, route } from '../_lib/http.js';
+import { env } from '../_lib/env.js';
+import { hashPassword } from '../_lib/auth.js';
+import { validate } from '../_lib/validation.js';
+import { writeAudit } from '../_lib/audit.js';
 
 /**
  * One-time bootstrap: creates all indexes and the first admin user.

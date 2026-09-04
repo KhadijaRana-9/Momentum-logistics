@@ -1,6 +1,6 @@
 import type { VercelRequest } from '@vercel/node';
 import { ObjectId } from 'mongodb';
-import { badRequest } from './http.ts';
+import { badRequest } from './http.js';
 
 export function stringParam(req: VercelRequest, key: string): string | undefined {
   const v = req.query[key];

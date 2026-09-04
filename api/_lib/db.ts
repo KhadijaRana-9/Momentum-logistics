@@ -1,6 +1,6 @@
 import { MongoClient, type Db, type Collection, type Document } from 'mongodb';
-import { env } from './env.ts';
-import { COLLECTIONS, INDEXES } from './models.ts';
+import { env } from './env.js';
+import { COLLECTIONS, INDEXES } from './models.js';
 
 /**
  * Serverless-safe MongoDB connection.

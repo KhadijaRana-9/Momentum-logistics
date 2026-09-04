@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { env } from './env.ts';
+import { env } from './env.js';
 
 /**
  * Thin HTTP helpers shared by every serverless function:

@@ -1,7 +1,7 @@
-import { getDb } from './_lib/db.ts';
-import { json, route } from './_lib/http.ts';
-import { env } from './_lib/env.ts';
-import { email } from './_lib/email.ts';
+import { getDb } from './_lib/db.js';
+import { json, route } from './_lib/http.js';
+import { env } from './_lib/env.js';
+import { email } from './_lib/email.js';
 
 /** Lightweight readiness probe — does not leak connection details. */
 export default route({

@@ -1,6 +1,6 @@
 import { ObjectId, type ClientSession } from 'mongodb';
-import { collection } from './db.ts';
-import { COLLECTIONS, type ActivityDoc, type ActivityType } from './models.ts';
+import { collection } from './db.js';
+import { COLLECTIONS, type ActivityDoc, type ActivityType } from './models.js';
 
 interface LogActivityInput {
   leadId: ObjectId;

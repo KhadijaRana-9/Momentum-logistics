@@ -1,5 +1,5 @@
-import type { ChatSessionDoc, ProductInterest } from './models.ts';
-import { normalizeEmail } from './validation.ts';
+import type { ChatSessionDoc, ProductInterest } from './models.js';
+import { normalizeEmail } from './validation.js';
 
 /**
  * Deterministic guided-qualification script used when no AI provider is

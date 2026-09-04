@@ -2,10 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ObjectId } from 'mongodb';
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
-import { env } from './env.ts';
-import { collection } from './db.ts';
-import { COLLECTIONS, permissionsForRole, type Permission, type UserDoc } from './models.ts';
-import { forbidden, unauthorized } from './http.ts';
+import { env } from './env.js';
+import { collection } from './db.js';
+import { COLLECTIONS, permissionsForRole, type Permission, type UserDoc } from './models.js';
+import { forbidden, unauthorized } from './http.js';
 
 const COOKIE_NAME = 'ml_session';
 const BCRYPT_ROUNDS = 12;

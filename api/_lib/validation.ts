@@ -1,4 +1,4 @@
-import { badRequest } from './http.ts';
+import { badRequest } from './http.js';
 
 /**
  * Minimal, dependency-free validation + sanitisation.

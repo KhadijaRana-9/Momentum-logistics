@@ -36,12 +36,12 @@ export const crmApi = {
 
   archiveLead: (id: string) => api.del<{ ok: boolean }>(`/leads/${id}`),
 
-  assignLead: (id: string, userId: string | null) => api.post<{ lead: Lead }>(`/leads/${id}/assign`, { userId }),
+  assignLead: (id: string, userId: string | null) => api.post<{ lead: Lead }>(`/leads/${id}?action=assign`, { userId }),
 
   setStatus: (id: string, status: string, reason?: string) =>
-    api.post<{ lead: Lead }>(`/leads/${id}/status`, { status, reason }),
+    api.post<{ lead: Lead }>(`/leads/${id}?action=status`, { status, reason }),
 
-  addNote: (id: string, note: string) => api.post<{ notesCount: number }>(`/leads/${id}/notes`, { note }),
+  addNote: (id: string, note: string) => api.post<{ notesCount: number }>(`/leads/${id}?action=notes`, { note }),
 
   listFollowups: (query: Record<string, string | number | undefined>, signal?: AbortSignal) =>
     api.get<{ items: Followup[]; total: number }>('/followups', query, signal),

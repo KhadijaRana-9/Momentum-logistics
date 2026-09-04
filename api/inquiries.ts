@@ -1,15 +1,15 @@
-import { route, json, getClientIp, badRequest } from './_lib/http.ts';
-import { validate } from './_lib/validation.ts';
-import { rateLimit } from './_lib/rateLimit.ts';
-import { buildAttribution } from './_lib/attribution.ts';
-import { captureLead } from './_lib/leadService.ts';
+import { route, json, getClientIp, badRequest } from './_lib/http.js';
+import { validate } from './_lib/validation.js';
+import { rateLimit } from './_lib/rateLimit.js';
+import { buildAttribution } from './_lib/attribution.js';
+import { captureLead } from './_lib/leadService.js';
 import {
   PRODUCTS,
   SUBMISSION_TYPES,
   type ProductInterest,
   type ServiceType,
   type SubmissionType,
-} from './_lib/models.ts';
+} from './_lib/models.js';
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 const TIMELINES = ['Immediately', 'This quarter', '1-3 months', '3-6 months', '6+ months', 'Just researching'];

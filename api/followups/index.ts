@@ -1,5 +1,5 @@
 import { ObjectId, type Filter } from 'mongodb';
-import { collection } from '../_lib/db.ts';
+import { collection } from '../_lib/db.js';
 import {
   COLLECTIONS,
   FOLLOWUP_TYPES,
@@ -7,15 +7,15 @@ import {
   type FollowupDoc,
   type LeadDoc,
   type UserDoc,
-} from '../_lib/models.ts';
-import { badRequest, json, notFound, route } from '../_lib/http.ts';
-import { requirePermission } from '../_lib/auth.ts';
-import { validate } from '../_lib/validation.ts';
-import { intParam, stringParam } from '../_lib/params.ts';
-import { logActivity } from '../_lib/activity.ts';
-import { writeAudit } from '../_lib/audit.ts';
+} from '../_lib/models.js';
+import { badRequest, json, notFound, route } from '../_lib/http.js';
+import { requirePermission } from '../_lib/auth.js';
+import { validate } from '../_lib/validation.js';
+import { intParam, stringParam } from '../_lib/params.js';
+import { logActivity } from '../_lib/activity.js';
+import { writeAudit } from '../_lib/audit.js';
 
-function serializeFollowup(f: FollowupDoc) {
+export function serializeFollowup(f: FollowupDoc) {
   const now = Date.now();
   return {
     id: String(f._id),

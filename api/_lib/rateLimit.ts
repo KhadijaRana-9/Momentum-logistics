@@ -1,7 +1,7 @@
 import type { VercelRequest } from '@vercel/node';
-import { collection } from './db.ts';
-import { COLLECTIONS } from './models.ts';
-import { getClientIp, tooMany } from './http.ts';
+import { collection } from './db.js';
+import { COLLECTIONS } from './models.js';
+import { getClientIp, tooMany } from './http.js';
 
 interface RateLimitDoc {
   key: string;

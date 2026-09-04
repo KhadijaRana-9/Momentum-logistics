@@ -1,5 +1,5 @@
-import { collection } from './db.ts';
-import { COLLECTIONS } from './models.ts';
+import { collection } from './db.js';
+import { COLLECTIONS } from './models.js';
 
 interface CounterDoc {
   _id: string;

@@ -5,7 +5,7 @@ import { getAttribution } from './attribution';
 /**
  * Centralised tracking. Every meaningful business event goes through `track()`.
  *
- * - Always: sent to our own /api/analytics/events (first-party, no consent needed
+ * - Always: sent to our own /api/analytics (first-party, no consent needed
  *   for aggregate, no PII).
  * - Optionally: forwarded to GA4 / Google Ads / Meta Pixel, but ONLY when
  *   config.tracking.enabled is true and the relevant ID is configured. Scripts
@@ -140,7 +140,7 @@ async function flush(): Promise<void> {
 
   const attr = getAttribution();
   try {
-    await api.post('/analytics/events', {
+    await api.post('/analytics', {
       events: batch.map((e) => ({
         event: e.event,
         anonymousId: attr.anonymousId,

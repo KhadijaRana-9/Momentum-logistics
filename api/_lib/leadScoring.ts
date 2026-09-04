@@ -2,7 +2,7 @@ import {
   type LeadDoc,
   type LeadTemperature,
   type ScoreFactor,
-} from './models.ts';
+} from './models.js';
 
 /**
  * Deterministic, fully explainable lead scoring.

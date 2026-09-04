@@ -1,6 +1,6 @@
 import type { VercelRequest } from '@vercel/node';
-import { LEAD_SOURCES, type Attribution, type LeadSource } from './models.ts';
-import { sanitizeText } from './validation.ts';
+import { LEAD_SOURCES, type Attribution, type LeadSource } from './models.js';
+import { sanitizeText } from './validation.js';
 
 /**
  * Normalises marketing attribution from a client-supplied payload + request

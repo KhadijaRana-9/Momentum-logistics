@@ -1,11 +1,11 @@
-import { collection } from '../_lib/db.ts';
-import { COLLECTIONS, FOLLOWUP_TYPES, LEAD_PRIORITIES, type FollowupDoc } from '../_lib/models.ts';
-import { badRequest, json, notFound, route } from '../_lib/http.ts';
-import { requirePermission } from '../_lib/auth.ts';
-import { objectIdParam } from '../_lib/params.ts';
-import { validate } from '../_lib/validation.ts';
-import { logActivity } from '../_lib/activity.ts';
-import { writeAudit } from '../_lib/audit.ts';
+import { collection } from '../_lib/db.js';
+import { COLLECTIONS, FOLLOWUP_TYPES, LEAD_PRIORITIES, type FollowupDoc } from '../_lib/models.js';
+import { badRequest, json, notFound, route } from '../_lib/http.js';
+import { requirePermission } from '../_lib/auth.js';
+import { objectIdParam } from '../_lib/params.js';
+import { validate } from '../_lib/validation.js';
+import { logActivity } from '../_lib/activity.js';
+import { writeAudit } from '../_lib/audit.js';
 
 export default route({
   PATCH: async (req, res) => {
@@ -53,7 +53,6 @@ export default route({
         actorId: session.id,
         actorName: session.name,
       });
-      // Clear the lead's followUpAt if no other pending follow-ups remain.
       const remaining = await followups.countDocuments({ leadId: current.leadId, status: 'Pending', _id: { $ne: id } });
       if (remaining === 0) {
         const leads = await collection(COLLECTIONS.leads);

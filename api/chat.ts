@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { getClientIp, json, notFound, route } from './_lib/http.ts';
-import { collection } from './_lib/db.ts';
-import { COLLECTIONS, type ChatSessionDoc } from './_lib/models.ts';
-import { validate } from './_lib/validation.ts';
-import { rateLimit } from './_lib/rateLimit.ts';
-import { buildAttribution } from './_lib/attribution.ts';
-import { advanceFlow, CHAT_GREETING, type ChatStep } from './_lib/chatFlow.ts';
-import { aiChat } from './_lib/aiChat.ts';
-import { captureLead } from './_lib/leadService.ts';
-import { logActivity } from './_lib/activity.ts';
+import { getClientIp, json, notFound, route } from './_lib/http.js';
+import { collection } from './_lib/db.js';
+import { COLLECTIONS, type ChatSessionDoc } from './_lib/models.js';
+import { validate } from './_lib/validation.js';
+import { rateLimit } from './_lib/rateLimit.js';
+import { buildAttribution } from './_lib/attribution.js';
+import { advanceFlow, CHAT_GREETING, type ChatStep } from './_lib/chatFlow.js';
+import { aiChat } from './_lib/aiChat.js';
+import { captureLead } from './_lib/leadService.js';
+import { logActivity } from './_lib/activity.js';
 
 /**
  * Website chatbot endpoint.

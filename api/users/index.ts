@@ -1,9 +1,9 @@
-import { collection } from '../_lib/db.ts';
-import { COLLECTIONS, ROLE_PERMISSIONS, type UserDoc } from '../_lib/models.ts';
-import { conflict, json, route } from '../_lib/http.ts';
-import { requireAuth, requirePermission, hashPassword } from '../_lib/auth.ts';
-import { validate } from '../_lib/validation.ts';
-import { writeAudit } from '../_lib/audit.ts';
+import { collection } from '../_lib/db.js';
+import { COLLECTIONS, ROLE_PERMISSIONS, type UserDoc } from '../_lib/models.js';
+import { conflict, json, route } from '../_lib/http.js';
+import { requireAuth, requirePermission, hashPassword } from '../_lib/auth.js';
+import { validate } from '../_lib/validation.js';
+import { writeAudit } from '../_lib/audit.js';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS);
 

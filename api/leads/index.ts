@@ -1,5 +1,5 @@
 import { ObjectId, type Filter, type Sort } from 'mongodb';
-import { collection } from '../_lib/db.ts';
+import { collection } from '../_lib/db.js';
 import {
   COLLECTIONS,
   LEAD_PRIORITIES,
@@ -9,14 +9,14 @@ import {
   PRODUCTS,
   SERVICE_TYPES,
   type LeadDoc,
-} from '../_lib/models.ts';
-import { json, route } from '../_lib/http.ts';
-import { requirePermission } from '../_lib/auth.ts';
-import { validate } from '../_lib/validation.ts';
-import { csvParam, intParam, stringParam } from '../_lib/params.ts';
-import { buildAttribution } from '../_lib/attribution.ts';
-import { captureLead, serializeLead } from '../_lib/leadService.ts';
-import { writeAudit } from '../_lib/audit.ts';
+} from '../_lib/models.js';
+import { json, route } from '../_lib/http.js';
+import { requirePermission } from '../_lib/auth.js';
+import { validate } from '../_lib/validation.js';
+import { csvParam, intParam, stringParam } from '../_lib/params.js';
+import { buildAttribution } from '../_lib/attribution.js';
+import { captureLead, serializeLead } from '../_lib/leadService.js';
+import { writeAudit } from '../_lib/audit.js';
 
 const SORTABLE: Record<string, keyof LeadDoc> = {
   createdAt: 'createdAt',

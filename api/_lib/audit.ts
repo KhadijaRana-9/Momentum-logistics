@@ -1,9 +1,9 @@
 import type { VercelRequest } from '@vercel/node';
 import { ObjectId } from 'mongodb';
-import { collection } from './db.ts';
-import { COLLECTIONS, type AuditLogDoc } from './models.ts';
-import { getClientIp } from './http.ts';
-import type { SessionUser } from './auth.ts';
+import { collection } from './db.js';
+import { COLLECTIONS, type AuditLogDoc } from './models.js';
+import { getClientIp } from './http.js';
+import type { SessionUser } from './auth.js';
 
 interface AuditInput {
   actor: SessionUser | null;

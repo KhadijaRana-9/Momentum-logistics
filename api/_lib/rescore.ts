@@ -1,8 +1,8 @@
 import type { ObjectId, WithId } from 'mongodb';
-import { collection } from './db.ts';
-import { COLLECTIONS, type LeadDoc } from './models.ts';
-import { scoreLead } from './leadScoring.ts';
-import { logActivity, countActivities } from './activity.ts';
+import { collection } from './db.js';
+import { COLLECTIONS, type LeadDoc } from './models.js';
+import { scoreLead } from './leadScoring.js';
+import { logActivity, countActivities } from './activity.js';
 
 /**
  * Recomputes a lead's deterministic score from its current stored fields and
