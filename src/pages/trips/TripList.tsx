@@ -67,7 +67,7 @@ export function TripList() {
         breadcrumbs={[{ label: 'Operations' }, { label: 'Trips' }]}
         actions={<>
           <Button variant="secondary" size="sm" icon={Download}>Export</Button>
-          <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/dispatch')}>New Trip</Button>
+          <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/app/dispatch')}>New Trip</Button>
         </>}
       />
 
@@ -86,7 +86,7 @@ export function TripList() {
       </Toolbar>
 
       <Card>
-        <DataTable columns={columns} data={filtered} keyField={(t) => t.id} onRowClick={(t) => navigate(`/trips/${t.id}`)} loading={loading} pageSize={8} />
+        <DataTable columns={columns} data={filtered} keyField={(t) => t.id} onRowClick={(t) => navigate(`/app/trips/${t.id}`)} loading={loading} pageSize={8} />
       </Card>
     </div>
   );

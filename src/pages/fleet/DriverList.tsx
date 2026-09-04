@@ -93,7 +93,7 @@ export function DriverList() {
       </Toolbar>
 
       <Card>
-        <DataTable columns={columns} data={filtered} keyField={(d) => d.id} onRowClick={(d) => navigate(`/fleet/drivers/${d.id}`)} pageSize={8} />
+        <DataTable columns={columns} data={filtered} keyField={(d) => d.id} onRowClick={(d) => navigate(`/app/fleet/drivers/${d.id}`)} pageSize={8} />
       </Card>
     </div>
   );

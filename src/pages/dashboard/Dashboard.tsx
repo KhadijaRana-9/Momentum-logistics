@@ -239,7 +239,7 @@ export function Dashboard() {
           title="Exceptions"
           subtitle="Requires attention"
           delay={0.35}
-          action={<Link to="/alerts" className="text-xs font-medium text-brand-700 hover:underline">View all</Link>}
+          action={<Link to="/app/alerts" className="text-xs font-medium text-brand-700 hover:underline">View all</Link>}
         >
           <div className="flex flex-col gap-1">
             {topExceptions.map((a) => (

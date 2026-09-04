@@ -65,17 +65,17 @@ export function DataTable<T>({ columns, data, keyField, onRowClick, loading, pag
 
   return (
     <div className="flex flex-col">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/60">
+            <tr className="border-b border-slate-200 bg-slate-50/80">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => toggleSort(col)}
                   style={{ width: col.width }}
                   className={cn(
-                    'sticky top-0 whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500',
+                  'sticky top-0 whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500',
                     col.align === 'right' && 'text-right',
                     col.align === 'center' && 'text-center',
                     col.sortable && 'cursor-pointer select-none hover:text-slate-700',
@@ -101,15 +101,15 @@ export function DataTable<T>({ columns, data, keyField, onRowClick, loading, pag
                 key={keyField(row)}
                 onClick={() => onRowClick?.(row)}
                 className={cn(
-                  'border-b border-slate-100 transition-colors duration-100 last:border-0',
-                  onRowClick && 'cursor-pointer hover:bg-brand-50/50',
+                  'border-b border-slate-100 transition-colors duration-150 last:border-0',
+                  onRowClick && 'cursor-pointer hover:bg-brand-50/70',
                 )}
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
                     className={cn(
-                      'px-4 py-3 align-middle text-[13.5px] text-slate-700',
+                      'px-4 py-3.5 align-middle text-[13.5px] text-slate-700',
                       col.align === 'right' && 'text-right',
                       col.align === 'center' && 'text-center',
                     )}
@@ -123,7 +123,7 @@ export function DataTable<T>({ columns, data, keyField, onRowClick, loading, pag
         </table>
       </div>
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-4 py-3">
           <span className="text-xs text-slate-500">
             Showing <span className="font-medium text-slate-700">{page * pageSize + 1}–{Math.min((page + 1) * pageSize, sorted.length)}</span> of <span className="font-medium text-slate-700">{sorted.length}</span>
           </span>

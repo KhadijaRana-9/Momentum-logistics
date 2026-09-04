@@ -14,9 +14,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: 'bg-brand-800 text-white shadow-xs hover:bg-brand-900 active:bg-brand-950 focus-visible:outline-brand-600',
-  secondary: 'bg-white text-brand-900 border border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100',
-  outline: 'bg-transparent text-brand-800 border border-brand-200 hover:bg-brand-50 active:bg-brand-100',
+  primary: 'bg-brand-800 text-white shadow-xs hover:bg-brand-900 hover:shadow-card active:bg-brand-950 focus-visible:outline-brand-600',
+  secondary: 'border border-slate-200 bg-white text-brand-900 shadow-xs hover:border-brand-200 hover:bg-slate-50 hover:shadow-xs active:bg-slate-100',
+  outline: 'border border-brand-200 bg-transparent text-brand-800 hover:bg-brand-50 hover:border-brand-300 active:bg-brand-100',
   ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200',
   danger: 'bg-rose-600 text-white shadow-xs hover:bg-rose-700 active:bg-rose-800',
   subtle: 'bg-brand-50 text-brand-800 hover:bg-brand-100 active:bg-brand-200',
@@ -38,9 +38,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center font-medium whitespace-nowrap transition-all duration-150 ease-out',
+          'inline-flex items-center justify-center font-medium whitespace-nowrap transition-[background-color,border-color,box-shadow,transform,color] duration-200 ease-out',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-none',
-          'active:scale-[0.98]',
+          'hover:-translate-y-px active:translate-y-0 active:scale-[0.985]',
           variantClasses[variant],
           sizeClasses[size],
           className,

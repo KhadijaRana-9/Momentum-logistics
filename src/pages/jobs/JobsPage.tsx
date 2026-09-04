@@ -32,7 +32,7 @@ export function JobsPage() {
         actions={
           <>
             <Button variant="secondary" size="sm" icon={Download}>Export</Button>
-            <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/rrr')}>New Job from RRR</Button>
+            <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/app/rrr')}>New Job from RRR</Button>
           </>
         }
       />

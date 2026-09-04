@@ -158,7 +158,7 @@ export function VehiclePnlPage() {
           </div>
           <Wallet size={16} className="text-slate-300" />
         </div>
-        <DataTable columns={columns} data={displayed} keyField={(p) => p.vehicle.id} onRowClick={(p) => navigate(`/fleet/vehicles/${p.vehicle.id}`)} pageSize={12} />
+        <DataTable columns={columns} data={displayed} keyField={(p) => p.vehicle.id} onRowClick={(p) => navigate(`/app/fleet/vehicles/${p.vehicle.id}`)} pageSize={12} />
       </Card>
     </div>
   );

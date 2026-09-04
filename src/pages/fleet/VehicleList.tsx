@@ -105,7 +105,7 @@ export function VehicleList() {
       </Toolbar>
 
       <Card>
-        <DataTable columns={columns} data={filtered} keyField={(v) => v.id} onRowClick={(v) => navigate(`/fleet/vehicles/${v.id}`)} loading={loading} pageSize={8} />
+        <DataTable columns={columns} data={filtered} keyField={(v) => v.id} onRowClick={(v) => navigate(`/app/fleet/vehicles/${v.id}`)} loading={loading} pageSize={8} />
       </Card>
     </div>
   );

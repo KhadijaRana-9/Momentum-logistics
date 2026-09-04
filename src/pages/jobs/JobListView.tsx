@@ -37,7 +37,7 @@ export function JobListView({ jobs }: { jobs: Job[] }) {
         columns={columns}
         data={jobs}
         keyField={(j) => j.id}
-        onRowClick={(j) => j.tripId ? navigate(`/trips/${j.tripId}`) : navigate(`/jobs`)}
+        onRowClick={(j) => j.tripId ? navigate(`/app/trips/${j.tripId}`) : navigate(`/app/jobs`)}
         pageSize={10}
       />
     </Card>

@@ -26,7 +26,7 @@ export function VehicleDetail() {
   if (!vehicle) {
     return (
       <div>
-        <PageHeader title="Vehicle Not Found" breadcrumbs={[{ label: 'Fleet' }, { label: 'Vehicles', to: '/fleet/vehicles' }]} />
+        <PageHeader title="Vehicle Not Found" breadcrumbs={[{ label: 'Fleet' }, { label: 'Vehicles', to: '/app/fleet/vehicles' }]} />
         <Card><EmptyState title="Vehicle not found" /></Card>
       </div>
     );
@@ -45,7 +45,7 @@ export function VehicleDetail() {
       <PageHeader
         title={`${vehicle.unitNumber} — ${vehicle.registration}`}
         description={`${vehicle.make} ${vehicle.model} (${vehicle.year}) · ${vehicle.type}`}
-        breadcrumbs={[{ label: 'Fleet' }, { label: 'Vehicles', to: '/fleet/vehicles' }, { label: vehicle.unitNumber }]}
+        breadcrumbs={[{ label: 'Fleet' }, { label: 'Vehicles', to: '/app/fleet/vehicles' }, { label: vehicle.unitNumber }]}
         actions={<>
           <StatusBadge status={vehicle.status} />
           <Button variant="secondary" size="sm" icon={Pencil}>Edit</Button>
@@ -138,7 +138,7 @@ export function VehicleDetail() {
               <div className="divide-y divide-slate-100">
                 {vTrips.length === 0 && <div className="p-2"><EmptyState title="No trips recorded" /></div>}
                 {vTrips.map((t) => (
-                  <button key={t.id} onClick={() => navigate(`/trips/${t.id}`)} className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-slate-50">
+                  <button key={t.id} onClick={() => navigate(`/app/trips/${t.id}`)} className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-slate-50">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium text-brand-950">{t.id} — {t.route}</p>
                       <p className="text-xs text-slate-400">{formatDate(t.startTime, 'short')}</p>
@@ -175,7 +175,7 @@ export function VehicleDetail() {
             <CardHeader title="Assigned Driver" />
             <CardBody>
               {driver ? (
-                <button onClick={() => navigate(`/fleet/drivers/${driver.id}`)} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
+                <button onClick={() => navigate(`/app/fleet/drivers/${driver.id}`)} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-700"><UserRound size={18} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-brand-950">{driver.name}</p>
@@ -197,7 +197,7 @@ export function VehicleDetail() {
                 <span className="text-brand-950">Net Profit</span>
                 <span className={profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>{formatCurrency(profit)}</span>
               </div>
-              <Button variant="outline" size="sm" className="mt-1 w-full" onClick={() => navigate('/finance/vehicle-pnl')}>View Full P&L</Button>
+              <Button variant="outline" size="sm" className="mt-1 w-full" onClick={() => navigate('/app/finance/vehicle-pnl')}>View Full P&L</Button>
             </CardBody>
           </Card>
 
@@ -205,7 +205,7 @@ export function VehicleDetail() {
             <CardHeader title="Similar Vehicles" subtitle={vehicle.type} />
             <CardBody className="flex flex-col gap-2">
               {vehicles.filter((v) => v.type === vehicle.type && v.id !== vehicle.id).slice(0, 3).map((v) => (
-                <button key={v.id} onClick={() => navigate(`/fleet/vehicles/${v.id}`)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-slate-50">
+                <button key={v.id} onClick={() => navigate(`/app/fleet/vehicles/${v.id}`)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-slate-50">
                   <span className="text-[12.5px] font-medium text-slate-700">{v.unitNumber}</span>
                   <StatusBadge status={v.status} dot={false} />
                 </button>

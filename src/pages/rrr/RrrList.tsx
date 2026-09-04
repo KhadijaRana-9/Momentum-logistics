@@ -87,7 +87,7 @@ export function RrrList() {
     { key: 'actions', header: '', align: 'right', width: '56px', render: (r) => (
       <Dropdown
         items={[
-          { label: 'View Details', icon: <Eye size={14} />, onClick: () => navigate(`/rrr/${r.id}`) },
+          { label: 'View Details', icon: <Eye size={14} />, onClick: () => navigate(`/app/rrr/${r.id}`) },
           { label: 'Edit RRR', icon: <Pencil size={14} />, onClick: () => toast({ type: 'info', title: 'Edit RRR', description: `Editing ${r.id}` }) },
           { label: 'Duplicate', divider: true },
           { label: 'Cancel Request', icon: <XCircle size={14} />, danger: true, onClick: () => toast({ type: 'warning', title: 'Request cancelled', description: `${r.id} marked as cancelled` }) },
@@ -105,7 +105,7 @@ export function RrrList() {
         actions={
           <>
             <Button variant="secondary" size="sm" icon={Download}>Export</Button>
-            <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/rrr/new')}>New RRR</Button>
+            <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/app/rrr/new')}>New RRR</Button>
           </>
         }
       />
@@ -149,7 +149,7 @@ export function RrrList() {
           columns={columns}
           data={filtered}
           keyField={(r) => r.id}
-          onRowClick={(r) => navigate(`/rrr/${r.id}`)}
+          onRowClick={(r) => navigate(`/app/rrr/${r.id}`)}
           loading={loading}
           pageSize={8}
           emptyTitle="No RRRs match your filters"

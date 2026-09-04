@@ -94,6 +94,24 @@ const STATUS_TONE: Record<string, Tone> = {
 
   // Alerts
   info: 'info',
+
+  // CRM — lead pipeline
+  contacted: 'info',
+  qualified: 'brand',
+  'demo scheduled': 'brand',
+  'demo completed': 'info',
+  'proposal sent': 'orange',
+  negotiation: 'warning',
+  won: 'success',
+  lost: 'danger',
+
+  // CRM — lead temperature
+  hot: 'danger',
+  warm: 'orange',
+  cold: 'info',
+
+  // CRM — follow-up
+  'follow-up': 'warning',
 };
 
 export function getStatusTone(status: string): Tone {

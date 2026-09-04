@@ -69,7 +69,7 @@ export function JobBoardView({ jobs: initialJobs, onMove }: JobBoardViewProps) {
                       draggable
                       onDragStart={() => setDragId(job.id)}
                       onDragEnd={() => { setDragId(null); setOverColumn(null); }}
-                      onClick={() => navigate(job.tripId ? `/trips/${job.tripId}` : '/jobs')}
+                      onClick={() => navigate(job.tripId ? `/app/trips/${job.tripId}` : '/app/jobs')}
                       className={cn(
                         'cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-xs transition-shadow hover:shadow-card-hover active:cursor-grabbing',
                         dragId === job.id && 'opacity-40',

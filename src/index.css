@@ -51,8 +51,8 @@
 
   /* Shadows — soft, low-contrast elevation */
   --shadow-xs: 0 1px 2px 0 rgb(15 30 60 / 0.04);
-  --shadow-card: 0 1px 2px 0 rgb(15 30 60 / 0.04), 0 1px 8px -2px rgb(15 30 60 / 0.06);
-  --shadow-card-hover: 0 4px 16px -4px rgb(15 30 60 / 0.10), 0 2px 6px -2px rgb(15 30 60 / 0.06);
+  --shadow-card: 0 1px 2px rgb(15 30 60 / 0.04), 0 8px 20px -16px rgb(15 30 60 / 0.22);
+  --shadow-card-hover: 0 16px 28px -20px rgb(15 30 60 / 0.32), 0 5px 10px -8px rgb(15 30 60 / 0.16);
   --shadow-popover: 0 12px 32px -8px rgb(15 30 60 / 0.18), 0 4px 12px -4px rgb(15 30 60 / 0.08);
   --shadow-modal: 0 24px 60px -12px rgb(10 20 40 / 0.28), 0 8px 24px -8px rgb(10 20 40 / 0.14);
 
@@ -64,6 +64,8 @@
   --animate-shimmer: shimmer 1.8s ease-in-out infinite;
   --animate-fade-in: fade-in 0.35s ease-out both;
   --animate-scale-in: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-rise-in: rise-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-soft-pulse: soft-pulse 2.8s ease-in-out infinite;
 
   @keyframes shimmer {
     0% { background-position: -400px 0; }
@@ -77,6 +79,14 @@
     from { opacity: 0; transform: scale(0.97); }
     to { opacity: 1; transform: scale(1); }
   }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.995); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes soft-pulse {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 0.75; transform: scale(1.06); }
+  }
 }
 
 @layer base {
@@ -88,7 +98,10 @@
     text-rendering: optimizeLegibility;
   }
   body {
+    min-height: 100vh;
     background-color: var(--color-canvas);
+    background-image: radial-gradient(circle at 88% -10%, rgb(73 142 171 / 0.12), transparent 29rem), radial-gradient(circle at 14% 0%, rgb(0 112 128 / 0.06), transparent 24rem);
+    background-attachment: fixed;
     color: var(--color-brand-950);
     font-family: var(--font-sans);
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
@@ -124,6 +137,31 @@
   }
 }
 
+@layer components {
+  .app-shell {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(135deg, rgb(245 247 250 / 0.82), rgb(238 241 246 / 0.9));
+  }
+
+  .app-shell::before {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    content: '';
+    opacity: 0.55;
+    background-image: linear-gradient(rgb(15 71 91 / 0.025) 1px, transparent 1px), linear-gradient(90deg, rgb(15 71 91 / 0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, black, transparent 80%);
+  }
+
+  .app-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
@@ -132,5 +170,14 @@
     background: linear-gradient(90deg, #eef1f6 0px, #f7f8fa 40px, #eef1f6 80px);
     background-size: 800px 100%;
     animation: var(--animate-shimmer);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

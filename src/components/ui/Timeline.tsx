@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils';
@@ -26,7 +27,13 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
         const Icon = e.icon ?? Circle;
         const isLast = i === events.length - 1;
         return (
-          <div key={i} className="relative flex gap-3 pb-6 last:pb-0">
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.28, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}
+            className="relative flex gap-3 pb-6 last:pb-0"
+          >
             {!isLast && <div className="absolute left-[13px] top-7 h-full w-px bg-slate-200" />}
             <span className={cn('relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', toneClasses[e.tone ?? 'neutral'])}>
               <Icon size={13} strokeWidth={2.4} />
@@ -38,7 +45,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
               </div>
               {e.description && <p className="mt-0.5 text-xs text-slate-500">{e.description}</p>}
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>

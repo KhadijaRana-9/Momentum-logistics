@@ -106,7 +106,7 @@ export function LiveTracking() {
                 <div className="flex flex-col gap-3 px-5 pb-5">
                   <div className="flex items-center gap-2 text-[13px] text-slate-600"><MapPin size={14} className="text-slate-400" /> {selected.location}</div>
                   {selectedDriver && (
-                    <button onClick={() => navigate(`/fleet/drivers/${selectedDriver.id}`)} className="flex items-center gap-2 text-[13px] text-slate-600 hover:text-brand-700">
+                    <button onClick={() => navigate(`/app/fleet/drivers/${selectedDriver.id}`)} className="flex items-center gap-2 text-[13px] text-slate-600 hover:text-brand-700">
                       <UserRound size={14} className="text-slate-400" /> {selectedDriver.name}
                     </button>
                   )}
@@ -117,7 +117,7 @@ export function LiveTracking() {
                     <MiniStat icon={Navigation} label="Utilization" value={`${selected.utilization}%`} />
                   </div>
                   {selectedTrip && (
-                    <button onClick={() => navigate(`/trips/${selectedTrip.id}`)} className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
+                    <button onClick={() => navigate(`/app/trips/${selectedTrip.id}`)} className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
                       <div>
                         <p className="text-[12.5px] font-semibold text-brand-950">{selectedTrip.id}</p>
                         <p className="text-[11px] text-slate-400">ETA {selectedTrip.eta ? formatDateTime(selectedTrip.eta) : '—'}</p>

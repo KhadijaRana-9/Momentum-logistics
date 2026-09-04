@@ -38,7 +38,7 @@ export function BillingPage() {
         title="Billing"
         description="Revenue billing pipeline, customer balances, and collections overview."
         breadcrumbs={[{ label: 'Finance' }, { label: 'Billing' }]}
-        actions={<button onClick={() => navigate('/finance/invoices')} className="flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">View All Invoices <ArrowRight size={14} /></button>}
+        actions={<button onClick={() => navigate('/app/finance/invoices')} className="flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">View All Invoices <ArrowRight size={14} /></button>}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -86,7 +86,7 @@ export function BillingPage() {
       </div>
 
       <Card className="mt-5">
-        <CardHeader title="Recent Invoices" action={<button onClick={() => navigate('/finance/invoices')} className="text-xs font-medium text-brand-700 hover:underline">View all</button>} />
+        <CardHeader title="Recent Invoices" action={<button onClick={() => navigate('/app/finance/invoices')} className="text-xs font-medium text-brand-700 hover:underline">View all</button>} />
         <div className="divide-y divide-slate-100">
           {invoices.slice(0, 6).map((inv) => (
             <div key={inv.id} className="flex items-center gap-4 px-5 py-3">

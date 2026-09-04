@@ -81,7 +81,7 @@ export function MaintenancePage() {
           <CardHeader title="Preventive Maintenance Due" subtitle="Vehicles approaching their scheduled service interval" />
           <div className="flex gap-3 overflow-x-auto px-5 pb-5">
             {pmDue.map((v) => (
-              <button key={v.id} onClick={() => navigate(`/fleet/vehicles/${v.id}`)} className="flex w-56 shrink-0 items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-left transition-colors hover:bg-amber-50">
+              <button key={v.id} onClick={() => navigate(`/app/fleet/vehicles/${v.id}`)} className="flex w-56 shrink-0 items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-left transition-colors hover:bg-amber-50">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700"><AlertTriangle size={16} /></span>
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-semibold text-brand-950">{v.unitNumber}</p>

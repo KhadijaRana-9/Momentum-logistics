@@ -130,7 +130,7 @@ export function DispatchCenter() {
                       </div>
                     </div>
                     {job.tripId && (
-                      <a href={`/trips/${job.tripId}`} className="flex shrink-0 items-center gap-1 text-xs font-medium text-brand-700 hover:underline">
+                      <a href={`/app/trips/${job.tripId}`} className="flex shrink-0 items-center gap-1 text-xs font-medium text-brand-700 hover:underline">
                         {job.tripId} <ArrowRight size={12} />
                       </a>
                     )}

@@ -22,16 +22,16 @@ export function RrrForm() {
       title: mode === 'draft' ? 'Saved as draft' : 'RRR submitted for approval',
       description: `${nextId} has been ${mode === 'draft' ? 'saved' : 'sent to Operations Director'}.`,
     });
-    navigate('/rrr');
+    navigate('/app/rrr');
   }
 
   return (
     <div>
       <PageHeader
         title="New Requisition Request"
-        breadcrumbs={[{ label: 'Operations' }, { label: 'RRR', to: '/rrr' }, { label: 'New' }]}
+        breadcrumbs={[{ label: 'Operations' }, { label: 'RRR', to: '/app/rrr' }, { label: 'New' }]}
         description={`Draft reference ${nextId} — fill in the sections below to submit for approval.`}
-        actions={<Button variant="secondary" size="sm" onClick={() => navigate('/rrr')}>Cancel</Button>}
+        actions={<Button variant="secondary" size="sm" onClick={() => navigate('/app/rrr')}>Cancel</Button>}
       />
 
       <form onSubmit={(e) => { e.preventDefault(); finish('submit'); }}>
@@ -99,7 +99,7 @@ export function RrrForm() {
         </Card>
 
         <div className="mt-5 flex items-center justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={() => navigate('/rrr')}>Discard</Button>
+          <Button type="button" variant="secondary" onClick={() => navigate('/app/rrr')}>Discard</Button>
           <Button type="button" variant="outline" icon={Save} onClick={() => finish('draft')}>Save as Draft</Button>
           <Button type="submit" variant="primary" icon={Send}>Submit for Approval</Button>
         </div>

@@ -23,7 +23,7 @@ export function DriverDetail() {
   if (!driver) {
     return (
       <div>
-        <PageHeader title="Driver Not Found" breadcrumbs={[{ label: 'Fleet' }, { label: 'Drivers', to: '/fleet/drivers' }]} />
+        <PageHeader title="Driver Not Found" breadcrumbs={[{ label: 'Fleet' }, { label: 'Drivers', to: '/app/fleet/drivers' }]} />
         <Card><EmptyState title="Driver not found" /></Card>
       </div>
     );
@@ -39,7 +39,7 @@ export function DriverDetail() {
       <PageHeader
         title={driver.name}
         description={`${driver.id} · ${driver.nationality} · Joined ${formatDate(driver.joinDate)}`}
-        breadcrumbs={[{ label: 'Fleet' }, { label: 'Drivers', to: '/fleet/drivers' }, { label: driver.name }]}
+        breadcrumbs={[{ label: 'Fleet' }, { label: 'Drivers', to: '/app/fleet/drivers' }, { label: driver.name }]}
         actions={<StatusBadge status={driver.status} />}
       />
 
@@ -78,7 +78,7 @@ export function DriverDetail() {
               <div className="divide-y divide-slate-100">
                 {dTrips.length === 0 && <div className="p-2"><EmptyState title="No trips recorded" /></div>}
                 {dTrips.map((t) => (
-                  <button key={t.id} onClick={() => navigate(`/trips/${t.id}`)} className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-slate-50">
+                  <button key={t.id} onClick={() => navigate(`/app/trips/${t.id}`)} className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-slate-50">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium text-brand-950">{t.id} — {t.route}</p>
                       <p className="text-xs text-slate-400">{formatDate(t.startTime, 'short')}</p>
@@ -140,7 +140,7 @@ export function DriverDetail() {
             <CardHeader title="Assigned Vehicle" />
             <CardBody>
               {vehicle ? (
-                <button onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
+                <button onClick={() => navigate(`/app/fleet/vehicles/${vehicle.id}`)} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Truck size={18} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-brand-950">{vehicle.unitNumber}</p>

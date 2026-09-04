@@ -26,7 +26,7 @@ export function TripSheet() {
   if (!initial) {
     return (
       <div>
-        <PageHeader title="Trip Not Found" breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/trips' }]} />
+        <PageHeader title="Trip Not Found" breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/app/trips' }]} />
         <Card><EmptyState title="Trip not found" description="This trip sheet may have been removed." /></Card>
       </div>
     );
@@ -63,7 +63,7 @@ export function TripSheet() {
     <div>
       <PageHeader
         title={trip.id}
-        breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/trips' }, { label: trip.id }]}
+        breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/app/trips' }, { label: trip.id }]}
         description={`${trip.route} — Job ${trip.jobId} · RRR ${trip.rrrId}`}
         actions={<>
           <Button variant="secondary" size="sm" icon={Printer}>Print Trip Sheet</Button>

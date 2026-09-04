@@ -24,15 +24,15 @@ interface SearchResult {
 
 function buildIndex(): SearchResult[] {
   return [
-    ...rrrs.map((r) => ({ id: r.id, title: r.id, subtitle: `${r.route} — ${r.status}`, group: 'RRR', icon: ClipboardList, to: `/rrr/${r.id}` })),
-    ...jobs.map((j) => ({ id: j.id, title: j.id, subtitle: `${j.route} — ${j.status}`, group: 'Jobs', icon: Briefcase, to: `/jobs` })),
-    ...trips.map((t) => ({ id: t.id, title: t.id, subtitle: `${t.route} — ${t.status}`, group: 'Trips', icon: Route, to: `/trips/${t.id}` })),
-    ...vehicles.map((v) => ({ id: v.id, title: `${v.unitNumber} — ${v.registration}`, subtitle: `${v.type} — ${v.status}`, group: 'Vehicles', icon: Truck, to: `/fleet/vehicles/${v.id}` })),
-    ...drivers.map((d) => ({ id: d.id, title: d.name, subtitle: `${d.licenseNumber} — ${d.status}`, group: 'Drivers', icon: UserRound, to: `/fleet/drivers/${d.id}` })),
-    ...customers.map((c) => ({ id: c.id, title: c.name, subtitle: `${c.city} — ${c.industry}`, group: 'Customers', icon: Building2, to: `/rrr` })),
-    ...invoices.map((i) => ({ id: i.id, title: i.id, subtitle: `${i.status} — Due ${i.dueDate}`, group: 'Invoices', icon: FileText, to: `/finance/invoices` })),
-    ...workshops.map((w) => ({ id: w.id, title: w.name, subtitle: `${w.city} — ${w.type}`, group: 'Workshops', icon: Wrench, to: `/maintenance/workshops` })),
-    ...parts.map((p) => ({ id: p.id, title: p.name, subtitle: `${p.sku} — ${p.status}`, group: 'Parts', icon: PackageSearch, to: `/maintenance/parts` })),
+    ...rrrs.map((r) => ({ id: r.id, title: r.id, subtitle: `${r.route} — ${r.status}`, group: 'RRR', icon: ClipboardList, to: `/app/rrr/${r.id}` })),
+    ...jobs.map((j) => ({ id: j.id, title: j.id, subtitle: `${j.route} — ${j.status}`, group: 'Jobs', icon: Briefcase, to: `/app/jobs` })),
+    ...trips.map((t) => ({ id: t.id, title: t.id, subtitle: `${t.route} — ${t.status}`, group: 'Trips', icon: Route, to: `/app/trips/${t.id}` })),
+    ...vehicles.map((v) => ({ id: v.id, title: `${v.unitNumber} — ${v.registration}`, subtitle: `${v.type} — ${v.status}`, group: 'Vehicles', icon: Truck, to: `/app/fleet/vehicles/${v.id}` })),
+    ...drivers.map((d) => ({ id: d.id, title: d.name, subtitle: `${d.licenseNumber} — ${d.status}`, group: 'Drivers', icon: UserRound, to: `/app/fleet/drivers/${d.id}` })),
+    ...customers.map((c) => ({ id: c.id, title: c.name, subtitle: `${c.city} — ${c.industry}`, group: 'Customers', icon: Building2, to: `/app/rrr` })),
+    ...invoices.map((i) => ({ id: i.id, title: i.id, subtitle: `${i.status} — Due ${i.dueDate}`, group: 'Invoices', icon: FileText, to: `/app/finance/invoices` })),
+    ...workshops.map((w) => ({ id: w.id, title: w.name, subtitle: `${w.city} — ${w.type}`, group: 'Workshops', icon: Wrench, to: `/app/maintenance/workshops` })),
+    ...parts.map((p) => ({ id: p.id, title: p.name, subtitle: `${p.sku} — ${p.status}`, group: 'Parts', icon: PackageSearch, to: `/app/maintenance/parts` })),
   ];
 }
 

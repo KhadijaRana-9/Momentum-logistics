@@ -31,7 +31,7 @@ export function RrrDetail() {
   if (!rrr) {
     return (
       <div>
-        <PageHeader title="RRR Not Found" breadcrumbs={[{ label: 'Operations' }, { label: 'RRR', to: '/rrr' }]} />
+        <PageHeader title="RRR Not Found" breadcrumbs={[{ label: 'Operations' }, { label: 'RRR', to: '/app/rrr' }]} />
         <Card><EmptyState title="RRR not found" description="This requisition may have been removed." /></Card>
       </div>
     );
@@ -47,7 +47,7 @@ export function RrrDetail() {
     <div>
       <PageHeader
         title={rrr.id}
-        breadcrumbs={[{ label: 'Operations' }, { label: 'RRR', to: '/rrr' }, { label: rrr.id }]}
+        breadcrumbs={[{ label: 'Operations' }, { label: 'RRR', to: '/app/rrr' }, { label: rrr.id }]}
         description={`Requested by ${rrr.requestedBy} on ${formatDate(rrr.date)}`}
         actions={
           <>
@@ -168,7 +168,7 @@ export function RrrDetail() {
             <CardHeader title="Related Job" />
             <CardBody>
               {job ? (
-                <button onClick={() => navigate('/jobs')} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
+                <button onClick={() => navigate('/app/jobs')} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/40">
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Briefcase size={16} /></span>
                   <div className="flex-1">
                     <p className="text-[13px] font-semibold text-brand-950">{job.id}</p>
