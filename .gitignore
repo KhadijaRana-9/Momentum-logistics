@@ -16,6 +16,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local credential / access notes — never commit
+*.secret.md
+/secrets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
