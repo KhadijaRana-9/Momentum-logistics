@@ -108,9 +108,13 @@ function App() {
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="alerts" element={<AlertsPage />} />
 
-                <Route path="admin/users" element={<UsersPage />} />
+                <Route element={<ProtectedRoute permission="users:manage" />}>
+                  <Route path="admin/users" element={<UsersPage />} />
+                </Route>
                 <Route path="admin/settings" element={<SettingsPage />} />
-                <Route path="admin/audit" element={<AuditTrailPage />} />
+                <Route element={<ProtectedRoute permission="audit:view" />}>
+                  <Route path="admin/audit" element={<AuditTrailPage />} />
+                </Route>
 
                 <Route path="*" element={<ComingSoon title="Page Not Found" />} />
               </Route>

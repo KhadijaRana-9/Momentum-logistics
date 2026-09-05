@@ -183,6 +183,13 @@ export interface UserDoc extends Timestamps {
   status: 'active' | 'invited' | 'suspended';
   lastLoginAt?: Date;
   avatarColor?: string;
+  /**
+   * Marks a record created by scripts/seed-dev-users.mjs. Lets the seed script
+   * recognise its own accounts on re-run (idempotent upsert) without ever
+   * touching a real user who happens to share an email — and gives everyone
+   * else an obvious signal these are test accounts, not production users.
+   */
+  seedAccount?: boolean;
 }
 
 export interface Attribution {
