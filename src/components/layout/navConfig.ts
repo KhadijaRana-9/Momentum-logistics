@@ -37,7 +37,7 @@ export const navSections: NavSection[] = [
   {
     label: 'Operations',
     items: [
-      { label: 'RRR', to: '/app/rrr', icon: ClipboardList },
+      { label: 'RRR', to: '/app/rrr', icon: ClipboardList, permission: 'rrr:view' },
       { label: 'Jobs', to: '/app/jobs', icon: Briefcase },
       { label: 'Dispatch', to: '/app/dispatch', icon: Send },
       { label: 'Trips', to: '/app/trips', icon: Route },

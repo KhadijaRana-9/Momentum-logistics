@@ -77,9 +77,13 @@ function App() {
                   <Route path="followups" element={<FollowupsPage />} />
                 </Route>
 
-                <Route path="rrr" element={<RrrList />} />
-                <Route path="rrr/new" element={<RrrForm />} />
-                <Route path="rrr/:id" element={<RrrDetail />} />
+                <Route path="rrr" element={<ProtectedRoute permission="rrr:view" />}>
+                  <Route index element={<RrrList />} />
+                  <Route path=":id" element={<RrrDetail />} />
+                  <Route element={<ProtectedRoute permission="rrr:create" />}>
+                    <Route path="new" element={<RrrForm />} />
+                  </Route>
+                </Route>
 
                 <Route path="jobs" element={<JobsPage />} />
                 <Route path="dispatch" element={<DispatchCenter />} />

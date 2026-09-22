@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   'followups:view', 'followups:manage',
   'analytics:view', 'content:manage', 'campaigns:manage',
   'chatbot:manage', 'integrations:manage', 'users:manage', 'audit:view',
+  'rrr:view', 'rrr:create', 'rrr:edit', 'rrr:approve',
 ] as const;
 export type PermissionName = (typeof PERMISSIONS)[number];
 
@@ -31,13 +32,15 @@ const ROLE_PERMISSIONS: Record<RoleName, '*' | PermissionName[]> = {
     'leads:view', 'leads:create', 'leads:edit', 'leads:assign', 'leads:delete',
     'followups:view', 'followups:manage', 'analytics:view', 'content:manage',
     'campaigns:manage', 'audit:view',
+    'rrr:view', 'rrr:create', 'rrr:edit', 'rrr:approve',
   ],
   sales_rep: [
     'leads:view', 'leads:create', 'leads:edit',
     'followups:view', 'followups:manage', 'analytics:view',
+    'rrr:view', 'rrr:create', 'rrr:edit',
   ],
-  marketing: ['leads:view', 'analytics:view', 'content:manage', 'campaigns:manage', 'chatbot:manage'],
-  viewer: ['leads:view', 'followups:view', 'analytics:view'],
+  marketing: ['leads:view', 'analytics:view', 'content:manage', 'campaigns:manage', 'chatbot:manage', 'rrr:view'],
+  viewer: ['leads:view', 'followups:view', 'analytics:view', 'rrr:view'],
 };
 
 export function roleHasPermission(role: string, permission: PermissionName): boolean {

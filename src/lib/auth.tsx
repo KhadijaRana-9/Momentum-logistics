@@ -5,7 +5,8 @@ export type Permission =
   | 'leads:view' | 'leads:create' | 'leads:edit' | 'leads:assign' | 'leads:delete'
   | 'followups:view' | 'followups:manage'
   | 'analytics:view' | 'content:manage' | 'campaigns:manage'
-  | 'chatbot:manage' | 'integrations:manage' | 'users:manage' | 'audit:view';
+  | 'chatbot:manage' | 'integrations:manage' | 'users:manage' | 'audit:view'
+  | 'rrr:view' | 'rrr:create' | 'rrr:edit' | 'rrr:approve';
 
 export interface AuthUser {
   id: string;

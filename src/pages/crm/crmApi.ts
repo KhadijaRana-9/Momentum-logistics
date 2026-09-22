@@ -50,7 +50,7 @@ export const crmApi = {
   createFollowup: (body: Record<string, unknown>) => api.post<{ followup: Followup }>('/followups', body),
 
   updateFollowup: (id: string, body: Record<string, unknown>) =>
-    api.patch<{ followup: Partial<Followup> }>(`/followups/${id}`, body),
+    api.patch<{ followup: Partial<Followup> }>(`/followups?id=${id}`, body),
 
   analytics: (days: number, signal?: AbortSignal) =>
     api.get<AnalyticsSummary>('/analytics', { days }, signal),

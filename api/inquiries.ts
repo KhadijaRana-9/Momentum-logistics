@@ -10,14 +10,17 @@ import {
   type ServiceType,
   type SubmissionType,
 } from './_lib/models.js';
+import { email as emailService, demoConfirmationEmail } from './_lib/email.js';
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 const TIMELINES = ['Immediately', 'This quarter', '1-3 months', '3-6 months', '6+ months', 'Just researching'];
 
 /**
- * Public multi-purpose inquiry endpoint: contact form, software consultation,
- * FBR invoicing inquiry, Cloud & AI inquiry, quote request. All feed the same
- * central lead system — no isolated tables.
+ * Public multi-purpose inquiry endpoint: demo request, contact form, software
+ * consultation, FBR invoicing inquiry, Cloud & AI inquiry, quote request. All
+ * feed the same central lead system — no isolated tables. (demo_request used
+ * to be its own /api/demo-requests function; folded in here to stay under
+ * Vercel's Hobby-plan limit of 12 serverless functions.)
  */
 const TYPE_TO_PRODUCT: Partial<Record<SubmissionType, ProductInterest>> = {
   erp_demo: 'ERP Suite',
@@ -33,6 +36,7 @@ const TYPE_TO_SERVICE: Partial<Record<SubmissionType, ServiceType>> = {
   fbr_inquiry: 'Consultation',
   cloud_ai_inquiry: 'Consultation',
   erp_demo: 'Demo',
+  demo_request: 'Demo',
 };
 
 export default route({
@@ -54,11 +58,13 @@ export default route({
         timeline: { type: 'enum', values: TIMELINES },
         budget: { type: 'string', max: 60 },
         message: { type: 'string', max: 3000 },
+        requirements: { type: 'string', max: 2000 },
         businessProblem: { type: 'string', max: 3000 },
         requiredSolution: { type: 'string', max: 2000 },
         currentSystem: { type: 'string', max: 200 },
         fbrRequirements: { type: 'string', max: 2000 },
         usersOrBranches: { type: 'string', max: 120 },
+        preferredDate: { type: 'string', max: 60 },
         source: { type: 'string', max: 60 },
         utmSource: { type: 'string', max: 120 },
         utmMedium: { type: 'string', max: 120 },
@@ -91,12 +97,14 @@ export default route({
 
     const requirements = [
       body.message,
+      body.requirements,
       body.businessProblem && `Business problem: ${body.businessProblem}`,
       body.requiredSolution && `Required solution: ${body.requiredSolution}`,
       body.currentSystem && `Current system: ${body.currentSystem}`,
       body.fbrRequirements && `FBR requirements: ${body.fbrRequirements}`,
       body.usersOrBranches && `Users/branches: ${body.usersOrBranches}`,
       body.businessType && `Business type: ${body.businessType}`,
+      body.preferredDate && `Preferred date: ${body.preferredDate}`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -126,10 +134,22 @@ export default route({
       },
     );
 
+    let emailConfirmation: string | undefined;
+    if (type === 'demo_request') {
+      const confirmation = await emailService.send({
+        to: body.email,
+        subject: 'We received your demo request — Momentum Logistics',
+        html: demoConfirmationEmail(body.name, product === 'Unspecified' ? 'product' : product),
+        replyTo: emailService.salesInbox,
+      });
+      emailConfirmation = confirmation.status;
+    }
+
     json(res, created ? 201 : 200, {
       ok: true,
       ref: lead.ref,
       deduplicated: !created,
+      ...(emailConfirmation ? { emailConfirmation } : {}),
     });
   },
 });

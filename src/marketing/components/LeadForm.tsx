@@ -70,10 +70,9 @@ export function LeadForm({ variant = 'demo', product, heading, compact, onSucces
     if (product && !payload.product) payload.product = product;
 
     try {
-      const endpoint = isDemo && variant === 'demo' ? '/demo-requests' : '/inquiries';
-      if (endpoint === '/inquiries') payload.type = variant === 'demo' ? 'demo_request' : variant;
+      payload.type = variant === 'demo' ? 'demo_request' : variant;
 
-      const res = await api.post<{ ref: string; deduplicated: boolean }>(endpoint, payload);
+      const res = await api.post<{ ref: string; deduplicated: boolean }>('/inquiries', payload);
       track(TRACK_EVENT[variant], { product: payload.product, deduplicated: res.deduplicated });
       track('lead_created', { source: 'form', variant });
       setSuccessRef(res.ref);

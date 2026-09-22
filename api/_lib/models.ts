@@ -27,6 +27,8 @@ export const COLLECTIONS = {
   webinarRegistrations: 'webinar_registrations',
   counters: 'counters',
   rateLimits: 'rate_limits',
+  customers: 'customers',
+  rrrs: 'rrrs',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
@@ -120,6 +122,16 @@ export const ACTIVITY_TYPES = [
 ] as const;
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 
+// RRR (requisition request) --------------------------------------------------
+
+export const RRR_STATUSES = [
+  'Draft', 'Submitted', 'Approved', 'Assigned', 'Job Created', 'Dispatched', 'Completed', 'Rejected',
+] as const;
+export type RrrStatus = (typeof RRR_STATUSES)[number];
+
+export const RRR_PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'] as const;
+export type RrrPriority = (typeof RRR_PRIORITIES)[number];
+
 // RBAC ---------------------------------------------------------------------
 
 export const PERMISSIONS = [
@@ -137,6 +149,10 @@ export const PERMISSIONS = [
   'integrations:manage',
   'users:manage',
   'audit:view',
+  'rrr:view',
+  'rrr:create',
+  'rrr:edit',
+  'rrr:approve',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -146,15 +162,18 @@ export const ROLE_PERMISSIONS: Record<string, Permission[] | '*'> = {
     'leads:view', 'leads:create', 'leads:edit', 'leads:assign', 'leads:delete',
     'followups:view', 'followups:manage', 'analytics:view', 'content:manage',
     'campaigns:manage', 'audit:view',
+    'rrr:view', 'rrr:create', 'rrr:edit', 'rrr:approve',
   ],
   sales_rep: [
     'leads:view', 'leads:create', 'leads:edit',
     'followups:view', 'followups:manage', 'analytics:view',
+    'rrr:view', 'rrr:create', 'rrr:edit',
   ],
   marketing: [
     'leads:view', 'analytics:view', 'content:manage', 'campaigns:manage', 'chatbot:manage',
+    'rrr:view',
   ],
-  viewer: ['leads:view', 'followups:view', 'analytics:view'],
+  viewer: ['leads:view', 'followups:view', 'analytics:view', 'rrr:view'],
 };
 
 export function permissionsForRole(role: string): Permission[] {
@@ -280,6 +299,54 @@ export interface FollowupDoc extends Timestamps {
   priority: LeadPriority;
   completedAt?: Date | null;
   createdBy: ObjectId;
+}
+
+export interface CustomerDoc extends Timestamps {
+  _id?: ObjectId;
+  name: string;
+  industry?: string;
+  city?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  contractType?: 'Contract' | 'Spot' | 'Rate Card';
+  creditLimit?: number;
+  outstandingBalance?: number;
+  activeSince?: Date;
+}
+
+export interface RrrDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. RRR-000042
+  customerId: ObjectId;
+  customerName: string; // denormalised for fast list rendering
+  department?: string;
+  vehicleType: string;
+  driverRequired: boolean;
+  numberOfVehicles: number;
+  pickup: string;
+  destination: string;
+  route?: string;
+  loadingInfo?: string;
+  unloadingInfo?: string;
+  requiredDate: Date;
+  priority: RrrPriority;
+  specialInstructions?: string;
+  contractRef?: string;
+  status: RrrStatus;
+  /**
+   * Vehicle/driver/job linkage is intentionally string-only for now — the
+   * Fleet (vehicles/drivers) and Jobs modules are not backed by MongoDB yet,
+   * so there is nothing real to reference. Populated once those exist.
+   */
+  assignedVehicleRef?: string | null;
+  assignedDriverRef?: string | null;
+  jobRef?: string | null;
+  requestedBy: ObjectId;
+  requestedByName: string;
+  approvedBy?: ObjectId | null;
+  approvedByName?: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface SubmissionDoc {
@@ -438,6 +505,18 @@ export const INDEXES: Record<string, IndexDef[]> = {
     { key: { leadId: 1, createdAt: -1 } },
     { key: { status: 1, dueAt: 1 } },
     { key: { dueAt: 1 } },
+  ],
+  [COLLECTIONS.customers]: [
+    { key: { name: 1 } },
+    { key: { contactEmail: 1 }, options: { sparse: true } },
+  ],
+  [COLLECTIONS.rrrs]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { status: 1, createdAt: -1 } },
+    { key: { customerId: 1, createdAt: -1 } },
+    { key: { requestedBy: 1, createdAt: -1 } },
+    { key: { requiredDate: 1 } },
+    { key: { priority: 1 } },
   ],
   [COLLECTIONS.submissions]: [
     { key: { leadId: 1, createdAt: -1 } },
