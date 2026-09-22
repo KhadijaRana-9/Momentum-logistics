@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { collection } from '../_lib/db.js';
 import { COLLECTIONS, RRR_PRIORITIES, RRR_STATUSES, type RrrDoc, type RrrStatus } from '../_lib/models.js';
-import { badRequest, json, notFound, route } from '../_lib/http.js';
+import { badRequest, forbidden, json, notFound, route } from '../_lib/http.js';
 import { requireAuth, requirePermission } from '../_lib/auth.js';
 import { objectIdParam, stringParam } from '../_lib/params.js';
 import { validate } from '../_lib/validation.js';
@@ -93,7 +93,7 @@ export default route({
     // (approve/reject/advance) is an approval-authority action.
     const needed = next === 'Submitted' ? 'rrr:edit' : 'rrr:approve';
     if (!session.permissions.includes(needed)) {
-      throw badRequest(`Missing permission: ${needed}`);
+      throw forbidden(`Missing permission: ${needed}`);
     }
 
     const rrrs = await collection<RrrDoc>(COLLECTIONS.rrrs);
