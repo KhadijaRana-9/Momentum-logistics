@@ -34,6 +34,10 @@ export const env = {
   get seedSecret(): string | undefined {
     return opt('SEED_SECRET');
   },
+  /** Auto-populated by Vercel once a Blob store is linked to the project. */
+  get blobReadWriteToken(): string | undefined {
+    return opt('BLOB_READ_WRITE_TOKEN');
+  },
   get isProd(): boolean {
     return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
   },

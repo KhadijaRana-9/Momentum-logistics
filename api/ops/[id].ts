@@ -4,14 +4,22 @@ import { ITEM } from '../_lib/ops/registry.js';
 
 /**
  * GET   /api/ops/:id?resource=<name>                  -> detail
+ * GET   /api/ops/:id?resource=<name>&action=<action>   -> named read action (e.g. file download)
  * PATCH /api/ops/:id?resource=<name>  { ...body }      -> edit
  * POST  /api/ops/:id?resource=<name>&action=<action>   -> named state transition
  */
 export default route({
   GET: async (req, res) => {
     const resource = stringParam(req, 'resource');
+    const action = stringParam(req, 'action');
     const id = objectIdParam(req);
     const entry = resource ? ITEM[resource] : undefined;
+    if (action) {
+      const handler = entry?.actions?.[action];
+      if (!handler) { json(res, 404, { error: `Unknown action "${action}" for resource "${resource ?? ''}"`, code: 'not_found' }); return; }
+      await handler(req, res, id);
+      return;
+    }
     if (!entry?.get) throw notFound(`Unknown resource: ${resource ?? '(none)'}`);
     await entry.get(req, res, id);
   },

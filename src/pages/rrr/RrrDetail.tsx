@@ -22,6 +22,7 @@ import { rrrApi, type Rrr, type RrrCustomer } from './rrrApi';
 import { crmApi } from '@/pages/crm/crmApi';
 import type { AuditLogEntry } from '@/pages/crm/types';
 import { opsApi } from '@/lib/opsApi';
+import { AttachmentsPanel } from '@/components/attachments/AttachmentsPanel';
 
 const PIPELINE_STAGES = ['Draft', 'Submitted', 'Approved', 'Assigned', 'Job Created', 'Dispatched', 'Completed'];
 
@@ -163,6 +164,7 @@ export function RrrDetail() {
               onChange={setTab}
               tabs={[
                 { id: 'overview', label: 'Overview' },
+                { id: 'attachments', label: 'Attachments' },
                 { id: 'activity', label: 'Activity' },
               ]}
             />
@@ -199,6 +201,11 @@ export function RrrDetail() {
                   </InfoGrid>
                 </SectionBlock>
               </motion.div>
+            )}
+            {tab === 'attachments' && (
+              <div className="p-5">
+                <AttachmentsPanel parentType="rrr" parentId={rrr.id} canUpload={can('rrr:edit')} />
+              </div>
             )}
             {tab === 'activity' && (
               <div className="p-5">

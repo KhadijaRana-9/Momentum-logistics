@@ -1,4 +1,5 @@
 import { api } from './apiClient';
+import { config } from './config';
 
 /**
  * Typed client for everything under /api/ops (Jobs, Dispatch/Trips, Fleet,
@@ -95,6 +96,12 @@ export interface Invoice {
   jobRefs: string[]; tripRefs: string[]; charges: InvoiceChargeLine[]; additionalCharges: InvoiceChargeLine[];
   discount: number; taxRate: number; subtotal: number; tax: number; total: number;
   status: (typeof INVOICE_STATUSES)[number]; issueDate: string; dueDate: string; createdAt: string; updatedAt: string;
+}
+
+export type AttachmentParentType = 'rrr' | 'expense' | 'fuel';
+export interface Attachment {
+  id: string; filename: string; contentType: string; size: number;
+  uploadedByName: string; createdAt: string;
 }
 
 export interface AlertItem {
@@ -201,5 +208,12 @@ export const opsApi = {
   },
   vehiclePnl: {
     get: (signal?: AbortSignal) => api.get<{ items: VehiclePnlRow[] }>('/ops', { resource: 'vehiclePnl' }, signal),
+  },
+  attachments: {
+    list: (parentType: AttachmentParentType, parentId: string, signal?: AbortSignal) =>
+      api.get<{ items: Attachment[] }>('/ops', { resource: 'attachments', parentType, parentId }, signal),
+    upload: (parentType: AttachmentParentType, parentId: string, file: { filename: string; contentType: string; data: string }) =>
+      create<Attachment>('attachments', 'attachment', { parentType, parentId, ...file }),
+    downloadUrl: (id: string) => `${config.apiBase}/ops/${id}?resource=attachments&action=download`,
   },
 };

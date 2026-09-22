@@ -7,6 +7,7 @@ import * as maintenance from './maintenance.js';
 import * as finance from './finance.js';
 import * as alertsResource from './alertsResource.js';
 import * as reports from './reports.js';
+import * as attachments from './attachments.js';
 
 type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void>;
 type IdHandler = (req: VercelRequest, res: VercelResponse, id: ObjectId) => Promise<void>;
@@ -43,6 +44,7 @@ export const LIST_CREATE: Record<string, ListCreateResource> = {
   alerts: { list: alertsResource.listAlerts },
   reports: { list: reports.getOpsReports },
   vehiclePnl: { list: reports.getVehiclePnl },
+  attachments: { list: attachments.listAttachments, create: attachments.createAttachment },
 };
 
 export const ITEM: Record<string, ItemResource> = {
@@ -58,4 +60,5 @@ export const ITEM: Record<string, ItemResource> = {
   fuel: { get: finance.getFuelVoucher },
   invoices: { get: finance.getInvoice, actions: { status: finance.updateInvoiceStatus } },
   alerts: { actions: { read: alertsResource.markAlertRead } },
+  attachments: { actions: { download: attachments.downloadAttachment } },
 };

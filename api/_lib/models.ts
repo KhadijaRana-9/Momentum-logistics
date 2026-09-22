@@ -41,6 +41,7 @@ export const COLLECTIONS = {
   fuelVouchers: 'fuel_vouchers',
   invoices: 'invoices',
   alerts: 'alerts',
+  attachments: 'attachments',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
@@ -671,6 +672,23 @@ export interface InvoiceDoc extends Timestamps {
 
 // Alerts / notifications ----------------------------------------------------------
 
+export const ATTACHMENT_PARENT_TYPES = ['rrr', 'expense', 'fuel'] as const;
+export type AttachmentParentType = (typeof ATTACHMENT_PARENT_TYPES)[number];
+
+export interface AttachmentDoc {
+  _id?: ObjectId;
+  filename: string;
+  contentType: string;
+  size: number;
+  /** Path inside the private Vercel Blob store — never sent to the client directly. */
+  blobPathname: string;
+  parentType: AttachmentParentType;
+  parentId: ObjectId;
+  uploadedBy: ObjectId;
+  uploadedByName: string;
+  createdAt: Date;
+}
+
 export interface AlertDoc {
   _id?: ObjectId;
   severity: AlertSeverity;
@@ -920,6 +938,9 @@ export const INDEXES: Record<string, IndexDef[]> = {
     { key: { createdAt: -1 } },
     { key: { recipientId: 1, createdAt: -1 }, options: { sparse: true } },
     { key: { visibleToPermission: 1, createdAt: -1 }, options: { sparse: true } },
+  ],
+  [COLLECTIONS.attachments]: [
+    { key: { parentType: 1, parentId: 1, createdAt: -1 } },
   ],
   [COLLECTIONS.submissions]: [
     { key: { leadId: 1, createdAt: -1 } },

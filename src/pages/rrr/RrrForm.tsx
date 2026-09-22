@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Paperclip, Plus, Save, Send, Upload } from 'lucide-react';
+import { Plus, Save, Send } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Field, FieldGroup, Input, Select, Textarea } from '@/components/ui/Field';
 import { useToast } from '@/components/ui/Toast';
 import { ApiError } from '@/lib/apiClient';
+import { opsApi } from '@/lib/opsApi';
 import { rrrApi, type RrrCustomer } from './rrrApi';
 import { NewCustomerModal } from './components/NewCustomerModal';
+import { PendingAttachmentsPicker, type PendingFile } from '@/components/attachments/PendingAttachmentsPicker';
 
 const VEHICLE_TYPES = ['Flatbed Trailer', 'Curtain-side Trailer', 'Reefer Trailer', 'Tanker Trailer', 'Lowbed Trailer', 'Box Truck', 'Tipper Truck', 'Car Carrier'];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
@@ -23,6 +25,7 @@ export function RrrForm() {
   const [submitting, setSubmitting] = useState<'draft' | 'submit' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -51,6 +54,21 @@ export function RrrForm() {
 
     try {
       const res = await rrrApi.create(body);
+
+      if (pendingFiles.length > 0) {
+        const failures: string[] = [];
+        for (const f of pendingFiles) {
+          try {
+            await opsApi.attachments.upload('rrr', res.rrr.id, { filename: f.filename, contentType: f.contentType, data: f.data });
+          } catch {
+            failures.push(f.filename);
+          }
+        }
+        if (failures.length > 0) {
+          toast({ type: 'error', title: 'Some attachments failed to upload', description: failures.join(', ') });
+        }
+      }
+
       toast({
         type: 'success',
         title: mode === 'draft' ? 'Saved as draft' : 'RRR submitted for approval',
@@ -142,14 +160,7 @@ export function RrrForm() {
               <Textarea name="specialInstructions" placeholder="e.g. ADR-certified driver mandatory, temperature-sensitive cargo..." />
             </Field>
             <Field label="Attachments" span="full">
-              <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-5 text-center">
-                <Upload size={18} className="mx-auto text-slate-400" />
-                <div className="flex-1 text-left">
-                  <p className="text-[13px] font-medium text-slate-600">File uploads aren't available yet</p>
-                  <p className="text-xs text-slate-400">PO, loading instructions, permits — coming in a later update</p>
-                </div>
-                <Button type="button" variant="secondary" size="sm" icon={Paperclip} disabled>Browse</Button>
-              </div>
+              <PendingAttachmentsPicker files={pendingFiles} onChange={setPendingFiles} />
             </Field>
           </FieldGroup>
         </Card>
