@@ -4,12 +4,15 @@ import {
   BarChart3, Activity, Bell, Users, Settings, History, Target, GitBranch, CalendarClock,
   type LucideIcon,
 } from 'lucide-react';
+import type { Permission } from '@/lib/auth';
 
 export interface NavItem {
   label: string;
   to: string;
   icon: LucideIcon;
   badge?: number;
+  /** When set, the item is hidden for anyone without this permission (see Sidebar.tsx). */
+  permission?: Permission;
 }
 
 export interface NavSection {
@@ -78,9 +81,9 @@ export const navSections: NavSection[] = [
   {
     label: 'Administration',
     items: [
-      { label: 'Users & Roles', to: '/app/admin/users', icon: Users },
+      { label: 'Users & Roles', to: '/app/admin/users', icon: Users, permission: 'users:manage' },
       { label: 'Settings', to: '/app/admin/settings', icon: Settings },
-      { label: 'Audit Trail', to: '/app/admin/audit', icon: History },
+      { label: 'Audit Trail', to: '/app/admin/audit', icon: History, permission: 'audit:view' },
     ],
   },
 ];

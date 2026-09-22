@@ -1,16 +1,24 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { collection } from '../_lib/db.js';
-import { COLLECTIONS, ROLE_PERMISSIONS, type UserDoc } from '../_lib/models.js';
+import { COLLECTIONS, ROLE_PERMISSIONS, type AuditLogDoc, type UserDoc } from '../_lib/models.js';
 import { conflict, json, route } from '../_lib/http.js';
 import { requireAuth, requirePermission, hashPassword } from '../_lib/auth.js';
 import { validate } from '../_lib/validation.js';
 import { writeAudit } from '../_lib/audit.js';
+import { intParam, stringParam } from '../_lib/params.js';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS);
 
 export default route({
-  // Any authenticated staff member can see the team roster (needed for the
-  // "assign lead" picker). Only non-sensitive fields are returned.
+  // GET /api/users              -> team roster (any authenticated staff member;
+  //                                needed for the "assign lead" picker)
+  // GET /api/users?scope=audit  -> recent audit log entries (requires audit:view)
+  //
+  // Folded into this one file rather than a new endpoint: the project is at
+  // Vercel's Hobby-plan limit of 12 serverless functions.
   GET: async (req, res) => {
+    if (stringParam(req, 'scope') === 'audit') return listAudit(req, res);
+
     await requireAuth(req);
     const users = await collection<UserDoc>(COLLECTIONS.users);
     const items = await users
@@ -63,3 +71,24 @@ export default route({
     json(res, 201, { user: { id: String(result.insertedId), name: doc.name, email: doc.email, role: doc.role, status: doc.status } });
   },
 });
+
+async function listAudit(req: VercelRequest, res: VercelResponse) {
+  await requirePermission(req, 'audit:view');
+  const limit = intParam(req, 'limit', 200, { min: 1, max: 500 });
+
+  const logs = await collection<AuditLogDoc>(COLLECTIONS.auditLogs);
+  const items = await logs.find({}).sort({ createdAt: -1 }).limit(limit).toArray();
+
+  json(res, 200, {
+    items: items.map((a) => ({
+      id: String(a._id),
+      actorName: a.actorName,
+      action: a.action,
+      entity: a.entity,
+      entityId: a.entityId ?? null,
+      changes: a.changes ?? [],
+      meta: a.meta ?? null,
+      createdAt: a.createdAt,
+    })),
+  });
+}

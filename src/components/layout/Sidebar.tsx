@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { navSections } from './navConfig';
 import { unreadAlertCount } from '@/data/alerts';
+import { useAuth } from '@/lib/auth';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -12,6 +13,10 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const alertCount = unreadAlertCount();
+  const { can } = useAuth();
+  const visibleSections = navSections
+    .map((section) => ({ ...section, items: section.items.filter((item) => !item.permission || can(item.permission)) }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <motion.aside
@@ -37,7 +42,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       <nav className="relative z-10 flex-1 overflow-y-auto px-3 pb-4 no-scrollbar">
-        {navSections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.label} className="mb-1 mt-4 first:mt-2">
             {!collapsed && (
               <p className="mb-1.5 px-2.5 text-[10.5px] font-semibold uppercase tracking-wider text-brand-400/80">{section.label}</p>

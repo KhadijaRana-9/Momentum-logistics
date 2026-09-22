@@ -109,6 +109,17 @@ export interface TeamMember {
   lastLoginAt: string | null;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  actorName: string;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  changes: { field: string; from: unknown; to: unknown }[];
+  meta: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 export interface LeadListResponse {
   items: Lead[];
   page: number;

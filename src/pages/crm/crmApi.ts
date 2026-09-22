@@ -1,6 +1,7 @@
 import { api } from '@/lib/apiClient';
 import type {
   AnalyticsSummary,
+  AuditLogEntry,
   Lead,
   LeadDetailResponse,
   LeadListResponse,
@@ -55,4 +56,10 @@ export const crmApi = {
     api.get<AnalyticsSummary>('/analytics', { days }, signal),
 
   team: (signal?: AbortSignal) => api.get<{ items: TeamMember[] }>('/users', undefined, signal),
+
+  createUser: (body: { name: string; email: string; role: string; password: string }) =>
+    api.post<{ user: TeamMember }>('/users', body),
+
+  auditLog: (signal?: AbortSignal) =>
+    api.get<{ items: AuditLogEntry[] }>('/users', { scope: 'audit' }, signal),
 };
