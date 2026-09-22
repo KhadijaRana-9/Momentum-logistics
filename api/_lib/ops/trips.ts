@@ -183,8 +183,16 @@ export async function updateTripStatus(req: VercelRequest, res: VercelResponse, 
     await jobs.updateOne({ _id: current.jobId }, { $set: { status: 'Completed', updatedAt: now } });
     const rrrs = await collection<RrrDoc>(COLLECTIONS.rrrs);
     await rrrs.updateOne({ _id: current.rrrId }, { $set: { status: 'Completed', updatedAt: now } });
+
     const vehicles = await collection<VehicleDoc>(COLLECTIONS.vehicles);
-    await vehicles.updateOne({ _id: current.vehicleId }, { $set: { status: 'Available', driverId: null, driverName: null, odometer: set.endOdometer ?? undefined, updatedAt: now } });
+    // The final odometer reading may have been recorded on an earlier "Delivered" call
+    // rather than this one — fall back to the trip's own stored value, and never write
+    // odometer: undefined (the Mongo driver serialises that as null, wiping the reading).
+    const finalOdometer = set.endOdometer ?? current.endOdometer ?? undefined;
+    const vehicleSet: Partial<VehicleDoc> = { status: 'Available', driverId: null, driverName: null, updatedAt: now };
+    if (finalOdometer != null) vehicleSet.odometer = finalOdometer;
+    await vehicles.updateOne({ _id: current.vehicleId }, { $set: vehicleSet });
+
     const drivers = await collection<DriverDoc>(COLLECTIONS.drivers);
     await drivers.updateOne({ _id: current.driverId }, { $set: { status: 'Active', assignedVehicleId: null, assignedVehicleRef: null, updatedAt: now } });
   }
