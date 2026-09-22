@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Calendar, ChevronDown, LogOut, Plus, Search, Settings } from 'lucide-react';
-import { alerts as allAlerts, unreadAlertCount } from '@/data/alerts';
+import { opsApi, type AlertItem } from '@/lib/opsApi';
 import { Avatar } from '@/components/ui/Avatar';
 import { StatusBadge } from '@/components/ui/Badge';
 import { cn, formatDateTime, timeAgo } from '@/lib/utils';
@@ -18,17 +18,26 @@ const QUICK_ACTIONS = [
 ];
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [unread, setUnread] = useState(0);
+  const [recentAlerts, setRecentAlerts] = useState<AlertItem[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (!can('alerts:view')) return;
+    opsApi.alerts.list({ limit: 6 }).then((res) => setRecentAlerts(res.items)).catch(() => {});
+    opsApi.alerts.list({ unread: 'true', limit: 1 }).then((res) => setUnread(res.total)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -41,9 +50,6 @@ export function Header() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  const unread = unreadAlertCount();
-  const recentAlerts = allAlerts.slice(0, 6);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b border-slate-200/80 bg-white/85 px-5 shadow-[0_1px_0_rgb(15_30_60_/_0.02)] backdrop-blur-xl sm:px-6">
@@ -100,13 +106,14 @@ export function Header() {
               <button onClick={() => { navigate('/app/alerts'); setNotifOpen(false); }} className="text-xs font-medium text-brand-700 hover:underline">View all</button>
             </div>
             <div className="max-h-80 overflow-y-auto border-t border-slate-100">
+              {recentAlerts.length === 0 && <p className="px-3 py-4 text-center text-xs text-slate-400">No notifications yet.</p>}
               {recentAlerts.map((a) => (
                 <div key={a.id} className="flex gap-2.5 border-b border-slate-50 px-3 py-2.5 last:border-0 hover:bg-slate-50">
                   <StatusBadge status={a.severity} dot={false} className="mt-0.5 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12.5px] font-medium text-brand-950">{a.title}</p>
-                    <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-500">{a.description}</p>
-                    <p className="mt-0.5 text-[10.5px] text-slate-400">{timeAgo(a.timestamp)}</p>
+                    {a.description && <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-500">{a.description}</p>}
+                    <p className="mt-0.5 text-[10.5px] text-slate-400">{timeAgo(a.createdAt)}</p>
                   </div>
                 </div>
               ))}

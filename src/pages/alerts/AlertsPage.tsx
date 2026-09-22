@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Check, CheckCheck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -8,22 +8,30 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { alerts as alertData } from '@/data/alerts';
+import { opsApi, type AlertItem } from '@/lib/opsApi';
 import { cn, timeAgo } from '@/lib/utils';
 
 const SEVERITY_OPTIONS = ['Critical', 'High', 'Medium', 'Low'];
-const MODULE_OPTIONS = Array.from(new Set(alertData.map((a) => a.module)));
 
 export function AlertsPage() {
-  const [alerts, setAlerts] = useState(alertData);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [severity, setSeverity] = useState('');
   const [moduleFilter, setModuleFilter] = useState('');
+
+  function load() {
+    setLoading(true);
+    opsApi.alerts.list({ limit: 100 }).then((res) => setAlerts(res.items)).finally(() => setLoading(false));
+  }
+  useEffect(load, []);
+
+  const moduleOptions = useMemo(() => Array.from(new Set(alerts.map((a) => a.module))), [alerts]);
 
   const filtered = useMemo(() => alerts.filter((a) => {
     if (severity && a.severity !== severity) return false;
     if (moduleFilter && a.module !== moduleFilter) return false;
     return true;
-  }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()), [alerts, severity, moduleFilter]);
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [alerts, severity, moduleFilter]);
 
   const counts = useMemo(() => ({
     critical: alerts.filter((a) => a.severity === 'Critical' && !a.read).length,
@@ -31,20 +39,28 @@ export function AlertsPage() {
     unread: alerts.filter((a) => !a.read).length,
   }), [alerts]);
 
-  function markRead(id: string) {
+  async function markRead(id: string) {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, read: true } : a)));
+    try {
+      await opsApi.alerts.markRead(id);
+    } catch {
+      load(); // revert to server truth if the write failed
+    }
   }
-  function markAllRead() {
+
+  async function markAllRead() {
+    const unread = alerts.filter((a) => !a.read);
     setAlerts((prev) => prev.map((a) => ({ ...a, read: true })));
+    await Promise.all(unread.map((a) => opsApi.alerts.markRead(a.id).catch(() => {})));
   }
 
   return (
     <div>
       <PageHeader
         title="Alerts Center"
-        description="System-wide exceptions and notifications requiring attention."
+        description="Real notifications raised by RRR, Jobs, Dispatch, Trips and Maintenance events."
         breadcrumbs={[{ label: 'Analytics' }, { label: 'Alerts' }]}
-        actions={<Button variant="secondary" size="sm" icon={CheckCheck} onClick={markAllRead}>Mark all as read</Button>}
+        actions={counts.unread > 0 ? <Button variant="secondary" size="sm" icon={CheckCheck} onClick={markAllRead}>Mark all as read</Button> : undefined}
       />
 
       <div className="mb-5 grid grid-cols-3 gap-4">
@@ -55,13 +71,13 @@ export function AlertsPage() {
 
       <Toolbar>
         <Select value={severity} onChange={(e) => setSeverity(e.target.value)} options={SEVERITY_OPTIONS.map((s) => ({ label: s, value: s }))} placeholder="All Severities" className="sm:w-44" />
-        <Select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} options={MODULE_OPTIONS.map((m) => ({ label: m, value: m }))} placeholder="All Modules" className="sm:w-44" />
+        <Select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} options={moduleOptions.map((m) => ({ label: m, value: m }))} placeholder="All Modules" className="sm:w-44" />
         {(severity || moduleFilter) && <button onClick={() => { setSeverity(''); setModuleFilter(''); }} className="text-xs font-medium text-slate-500 hover:text-brand-700 sm:ml-auto">Clear filters</button>}
       </Toolbar>
 
       <Card>
-        {filtered.length === 0 ? (
-          <EmptyState title="No alerts" description="Nothing matches the selected filters." />
+        {!loading && filtered.length === 0 ? (
+          <EmptyState title="No alerts" description="Nothing matches the selected filters — or nothing has happened yet." />
         ) : (
           <div className="divide-y divide-slate-100">
             {filtered.map((a, i) => (
@@ -88,8 +104,8 @@ export function AlertsPage() {
                     <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-500">{a.module}</span>
                     {!a.read && <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />}
                   </div>
-                  <p className="mt-1 text-[13px] text-slate-500">{a.description}</p>
-                  <p className="mt-1 text-[11px] text-slate-400">{a.entity} · {timeAgo(a.timestamp)}</p>
+                  {a.description && <p className="mt-1 text-[13px] text-slate-500">{a.description}</p>}
+                  <p className="mt-1 text-[11px] text-slate-400">{a.entityRef ?? ''} {a.entityRef ? '· ' : ''}{timeAgo(a.createdAt)}</p>
                 </div>
                 {!a.read && (
                   <button onClick={() => markRead(a.id)} className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50">

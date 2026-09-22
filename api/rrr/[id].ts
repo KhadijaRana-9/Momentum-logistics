@@ -6,6 +6,7 @@ import { requireAuth, requirePermission } from '../_lib/auth.js';
 import { objectIdParam, stringParam } from '../_lib/params.js';
 import { validate } from '../_lib/validation.js';
 import { diffFields, writeAudit } from '../_lib/audit.js';
+import { raiseAlert } from '../_lib/alerts.js';
 import { serializeRrr } from './index.js';
 
 const TERMINAL: RrrStatus[] = ['Completed', 'Rejected'];
@@ -125,6 +126,26 @@ export default route({
       meta: body.reason ? { reason: body.reason } : undefined,
       req,
     });
+
+    if (next === 'Submitted') {
+      await raiseAlert({
+        severity: current.priority === 'Urgent' ? 'High' : 'Medium', module: 'RRR', title: `${current.ref} submitted for approval`,
+        description: `${current.customerName} — ${current.pickup} → ${current.destination}`, entityType: 'rrr', entityRef: current.ref,
+        visibleToPermission: 'rrr:approve',
+      });
+    } else if (next === 'Approved') {
+      await raiseAlert({
+        severity: 'Medium', module: 'RRR', title: `${current.ref} approved`,
+        description: `${current.pickup} → ${current.destination} — ready to create a Job`, entityType: 'rrr', entityRef: current.ref,
+        recipientId: current.requestedBy,
+      });
+    } else if (next === 'Rejected') {
+      await raiseAlert({
+        severity: 'High', module: 'RRR', title: `${current.ref} rejected`,
+        description: body.reason, entityType: 'rrr', entityRef: current.ref,
+        recipientId: current.requestedBy,
+      });
+    }
 
     const updated = (await rrrs.findOne({ _id: id }))!;
     json(res, 200, { rrr: serializeRrr(updated) });

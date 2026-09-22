@@ -14,6 +14,7 @@ import { validate } from '../_lib/validation.js';
 import { csvParam, intParam, stringParam } from '../_lib/params.js';
 import { nextRef } from '../_lib/ids.js';
 import { writeAudit } from '../_lib/audit.js';
+import { raiseAlert } from '../_lib/alerts.js';
 
 /**
  * RRR = Requisition Request — the transport request that starts the existing
@@ -134,6 +135,14 @@ export default route({
       meta: { customer: customer.name, pickup: doc.pickup, destination: doc.destination },
       req,
     });
+
+    if (doc.status === 'Submitted') {
+      await raiseAlert({
+        severity: doc.priority === 'Urgent' ? 'High' : 'Medium', module: 'RRR', title: `${ref} submitted for approval`,
+        description: `${customer.name} — ${doc.pickup} → ${doc.destination}`, entityType: 'rrr', entityRef: ref,
+        visibleToPermission: 'rrr:approve',
+      });
+    }
 
     json(res, 201, { rrr: serializeRrr({ ...doc, _id: result.insertedId }) });
   },

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { AlertTriangle, Check, Download, Paperclip, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -10,54 +10,85 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
-import { expenseVouchers } from '@/data/expenses';
-import { getDriver, drivers } from '@/data/drivers';
-import { getVehicle, vehicles } from '@/data/vehicles';
-import type { ExpenseVoucher } from '@/data/types';
+import { useAuth } from '@/lib/auth';
+import { ApiError } from '@/lib/apiClient';
+import { opsApi, EXPENSE_CATEGORIES, EXPENSE_STATUSES, type Expense, type Driver, type Vehicle } from '@/lib/opsApi';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
-const CATEGORIES = ['Tolls & Parking', 'Driver Meals', 'Loading/Unloading', 'Vehicle Wash', 'Driver Advance', 'Miscellaneous'];
-const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected', 'Reimbursed'];
-
 export function ExpensesPage() {
+  const { can } = useAuth();
+  const toast = useToast();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [newOpen, setNewOpen] = useState(false);
-  const toast = useToast();
+  const [submitting, setSubmitting] = useState(false);
 
-  const filtered = useMemo(() => expenseVouchers.filter((e) => {
-    if (status && e.approvalStatus !== status) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!`${e.id} ${e.category} ${e.description}`.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  }), [search, status]);
+  function load() {
+    setLoading(true);
+    Promise.all([opsApi.expenses.list({ limit: 300, status: status || undefined }), opsApi.drivers.list({ limit: 200 }), opsApi.vehicles.list({ limit: 200 })])
+      .then(([e, d, v]) => { setExpenses(e.items); setDrivers(d.items); setVehicles(v.items); })
+      .finally(() => setLoading(false));
+  }
+  useEffect(load, [status]);
+
+  const filtered = useMemo(() => expenses.filter((e) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return `${e.ref} ${e.category} ${e.description ?? ''}`.toLowerCase().includes(q);
+  }), [expenses, search]);
 
   const summary = useMemo(() => ({
-    total: expenseVouchers.reduce((s, e) => s + e.amount, 0),
-    pending: expenseVouchers.filter((e) => e.approvalStatus === 'Pending').length,
-    flagged: expenseVouchers.filter((e) => e.flagged).length,
-    reimbursed: expenseVouchers.filter((e) => e.approvalStatus === 'Reimbursed').reduce((s, e) => s + e.amount, 0),
-  }), []);
+    total: expenses.reduce((s, e) => s + e.amount, 0),
+    pending: expenses.filter((e) => e.approvalStatus === 'Pending').length,
+    reimbursed: expenses.filter((e) => e.approvalStatus === 'Reimbursed').reduce((s, e) => s + e.amount, 0),
+  }), [expenses]);
 
-  const columns: Column<ExpenseVoucher>[] = [
-    { key: 'id', header: 'Voucher #', render: (e) => (
-      <div className="flex items-center gap-1.5">
-        <span className="font-semibold text-brand-800">{e.id}</span>
-        {e.flagged && <AlertTriangle size={13} className="text-amber-500" />}
-      </div>
-    ) },
+  const columns: Column<Expense>[] = [
+    { key: 'ref', header: 'Voucher #', render: (e) => <span className="font-semibold text-brand-800">{e.ref}</span> },
     { key: 'category', header: 'Category', render: (e) => <span className="text-slate-700">{e.category}</span> },
-    { key: 'description', header: 'Description', render: (e) => <span className="max-w-[220px] truncate text-slate-500">{e.description}</span> },
-    { key: 'driver', header: 'Driver', render: (e) => <span className="text-slate-600">{getDriver(e.driverId)?.name}</span> },
-    { key: 'vehicle', header: 'Vehicle', render: (e) => <span className="text-slate-600">{getVehicle(e.vehicleId)?.unitNumber ?? '—'}</span> },
-    { key: 'trip', header: 'Trip', render: (e) => <span className="text-slate-500">{e.tripId ?? '—'}</span> },
-    { key: 'date', header: 'Date', accessor: (e) => e.date, sortable: true, render: (e) => formatDate(e.date, 'short') },
-    { key: 'receipt', header: 'Receipt', align: 'center', render: (e) => e.receiptAttached ? <Paperclip size={13} className="mx-auto text-emerald-500" /> : <span className="text-slate-300">—</span> },
-    { key: 'amount', header: 'Amount', align: 'right', accessor: (e) => e.amount, sortable: true, render: (e) => <span className="font-semibold text-brand-950">{formatCurrency(e.amount)}</span> },
-    { key: 'status', header: 'Status', render: (e) => <StatusBadge status={e.approvalStatus} /> },
+    { key: 'description', header: 'Description', render: (e) => <span className="max-w-[220px] truncate text-slate-500">{e.description ?? '—'}</span> },
+    { key: 'driver', header: 'Driver', render: (e) => <span className="text-slate-600">{e.driverName ?? '—'}</span> },
+    { key: 'vehicle', header: 'Vehicle', render: (e) => <span className="text-slate-600">{e.vehicleRef ?? '—'}</span> },
+    { key: 'trip', header: 'Trip', render: (e) => <span className="text-slate-500">{e.tripRef ?? '—'}</span> },
+    { key: 'date', header: 'Date', render: (e) => formatDate(e.date, 'short') },
+    { key: 'amount', header: 'Amount', align: 'right', render: (e) => <span className="font-semibold text-brand-950">{formatCurrency(e.amount)}</span> },
+    { key: 'status', header: 'Status', render: (e) => can('finance:manage')
+      ? <select value={e.approvalStatus} onChange={(ev) => setStatusFor(e.id, ev.target.value)} onClick={(ev) => ev.stopPropagation()} className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px]">
+          {EXPENSE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      : <StatusBadge status={e.approvalStatus} /> },
   ];
+
+  async function setStatusFor(id: string, approvalStatus: string) {
+    try {
+      const updated = await opsApi.expenses.setStatus(id, approvalStatus);
+      setExpenses((prev) => prev.map((e) => (e.id === id ? updated : e)));
+      toast({ type: 'success', title: `Expense ${approvalStatus}` });
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not update expense', description: err instanceof ApiError ? err.message : undefined });
+    }
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitting(true);
+    const fd = new FormData(e.currentTarget);
+    const body = Object.fromEntries([...fd.entries()].filter(([, v]) => v !== ''));
+    try {
+      await opsApi.expenses.create(body);
+      toast({ type: 'success', title: 'Expense voucher submitted', description: 'Sent for approval' });
+      setNewOpen(false);
+      load();
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not submit voucher', description: err instanceof ApiError ? err.message : undefined });
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div>
@@ -65,54 +96,38 @@ export function ExpensesPage() {
         title="Expenses"
         description="Review and approve driver and vehicle expense vouchers."
         breadcrumbs={[{ label: 'Finance' }, { label: 'Expenses' }]}
-        actions={<>
-          <Button variant="secondary" size="sm" icon={Download}>Export</Button>
-          <Button variant="primary" size="sm" icon={Plus} onClick={() => setNewOpen(true)}>New Voucher</Button>
-        </>}
+        actions={can('finance:manage') ? <Button variant="primary" size="sm" icon={Plus} onClick={() => setNewOpen(true)}>New Voucher</Button> : undefined}
       />
 
-      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Card className="px-4 py-3.5"><p className="text-xs font-medium text-slate-500">Total Expenses</p><p className="mt-1 font-display text-2xl font-bold text-brand-800">{formatCurrency(summary.total)}</p></Card>
         <Card className="px-4 py-3.5"><p className="text-xs font-medium text-slate-500">Pending Approval</p><p className="mt-1 font-display text-2xl font-bold text-amber-600">{summary.pending}</p></Card>
-        <Card className="px-4 py-3.5"><p className="text-xs font-medium text-slate-500">Flagged / Anomalies</p><p className="mt-1 font-display text-2xl font-bold text-rose-600">{summary.flagged}</p></Card>
         <Card className="px-4 py-3.5"><p className="text-xs font-medium text-slate-500">Reimbursed</p><p className="mt-1 font-display text-2xl font-bold text-emerald-600">{formatCurrency(summary.reimbursed)}</p></Card>
       </div>
 
       <Toolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search voucher #, category, description..." className="sm:max-w-xs" />
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))} placeholder="All Statuses" className="sm:w-44" />
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} options={EXPENSE_STATUSES.map((s) => ({ label: s, value: s }))} placeholder="All Statuses" className="sm:w-44" />
         {(search || status) && <button onClick={() => { setSearch(''); setStatus(''); }} className="text-xs font-medium text-slate-500 hover:text-brand-700 sm:ml-auto">Clear filters</button>}
       </Toolbar>
 
       <Card>
-        <DataTable columns={columns} data={filtered} keyField={(e) => e.id} pageSize={8} />
+        <DataTable columns={columns} data={filtered} keyField={(e) => e.id} loading={loading} pageSize={filtered.length || 8} emptyTitle="No expenses yet" />
       </Card>
 
-      <Modal
-        open={newOpen}
-        onClose={() => setNewOpen(false)}
-        title="New Expense Voucher"
-        subtitle="Record a driver or vehicle expense"
-        footer={<>
-          <Button variant="secondary" onClick={() => setNewOpen(false)}>Cancel</Button>
-          <Button variant="primary" icon={Check} onClick={() => { toast({ type: 'success', title: 'Expense voucher submitted', description: 'Sent for approval' }); setNewOpen(false); }}>Submit</Button>
-        </>}
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Category" required><Select required options={CATEGORIES.map((c) => ({ label: c, value: c }))} placeholder="Select category" /></Field>
-          <Field label="Amount (AED)" required><Input type="number" placeholder="0.00" required /></Field>
-          <Field label="Driver" required><Select required options={drivers.map((d) => ({ label: d.name, value: d.id }))} placeholder="Select driver" /></Field>
-          <Field label="Vehicle"><Select options={vehicles.map((v) => ({ label: v.unitNumber, value: v.id }))} placeholder="Select vehicle" /></Field>
-          <Field label="Date" required><Input type="date" defaultValue="2026-08-20" required /></Field>
-          <Field label="Trip Reference"><Input placeholder="e.g. TRP-2026-0203" /></Field>
-          <Field label="Description" span="full"><Textarea placeholder="Brief description of the expense..." /></Field>
-          <Field label="Receipt" span="full">
-            <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3">
-              <Paperclip size={16} className="text-slate-400" />
-              <span className="flex-1 text-[13px] text-slate-500">Attach receipt image or PDF</span>
-              <Button type="button" variant="secondary" size="sm">Browse</Button>
-            </div>
-          </Field>
+      <Modal open={newOpen} onClose={() => setNewOpen(false)} title="New Expense Voucher" subtitle="Record a driver or vehicle expense" size="md">
+        <form id="new-expense-form" onSubmit={onSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2" noValidate>
+          <Field label="Category" required><Select name="category" required options={EXPENSE_CATEGORIES.map((c) => ({ label: c, value: c }))} placeholder="Select category" /></Field>
+          <Field label="Amount (AED)" required><Input name="amount" type="number" placeholder="0.00" required /></Field>
+          <Field label="Driver"><Select name="driverId" options={drivers.map((d) => ({ label: d.name, value: d.id }))} placeholder="Select driver" /></Field>
+          <Field label="Vehicle"><Select name="vehicleId" options={vehicles.map((v) => ({ label: v.unitNumber, value: v.id }))} placeholder="Select vehicle" /></Field>
+          <Field label="Date" required><Input name="date" type="date" required /></Field>
+          <div />
+          <Field label="Description" span="full"><Textarea name="description" placeholder="Brief description of the expense..." /></Field>
+        </form>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" type="button" onClick={() => setNewOpen(false)}>Cancel</Button>
+          <Button form="new-expense-form" type="submit" loading={submitting}>Submit</Button>
         </div>
       </Modal>
     </div>

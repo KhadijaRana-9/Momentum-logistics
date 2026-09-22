@@ -29,6 +29,18 @@ export const COLLECTIONS = {
   rateLimits: 'rate_limits',
   customers: 'customers',
   rrrs: 'rrrs',
+  jobs: 'jobs',
+  trips: 'trips',
+  vehicles: 'vehicles',
+  drivers: 'drivers',
+  workshops: 'workshops',
+  maintenanceOrders: 'maintenance_orders',
+  parts: 'parts',
+  tyres: 'tyres',
+  expenses: 'expenses',
+  fuelVouchers: 'fuel_vouchers',
+  invoices: 'invoices',
+  alerts: 'alerts',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
@@ -132,6 +144,62 @@ export type RrrStatus = (typeof RRR_STATUSES)[number];
 export const RRR_PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'] as const;
 export type RrrPriority = (typeof RRR_PRIORITIES)[number];
 
+// Operations: Jobs -> Dispatch -> Trips --------------------------------------
+// Workflow (explicit, server-enforced, no skipped states):
+//   Approved RRR -> Job "Created" -> "Assigned" (vehicle+driver set) ->
+//   "Dispatched" (Trip created) -> "In Progress" (Trip started/in transit) -> "Completed"
+
+export const JOB_STATUSES = ['Created', 'Assigned', 'Dispatched', 'In Progress', 'Completed'] as const;
+export type JobStatus = (typeof JOB_STATUSES)[number];
+
+export const BILLING_STATUSES = ['Not Billed', 'Pending', 'Invoiced', 'Paid'] as const;
+export type BillingStatus = (typeof BILLING_STATUSES)[number];
+
+// A Trip is created by the "dispatch" action on an Assigned job — there is no
+// separate dispatches collection; dispatching *is* creating the Trip.
+export const TRIP_STATUSES = ['Dispatched', 'Started', 'In Transit', 'Delivered', 'Completed'] as const;
+export type TripStatus = (typeof TRIP_STATUSES)[number];
+
+// Fleet ----------------------------------------------------------------------
+
+export const VEHICLE_STATUSES = ['Available', 'On Trip', 'Maintenance', 'Out of Service'] as const;
+export type VehicleStatus = (typeof VEHICLE_STATUSES)[number];
+
+export const DRIVER_STATUSES = ['Active', 'On Trip', 'Off Duty', 'Suspended'] as const;
+export type DriverStatus = (typeof DRIVER_STATUSES)[number];
+
+// Maintenance ------------------------------------------------------------------
+
+export const MAINTENANCE_CATEGORIES = ['Preventive', 'Repair', 'Inspection', 'Accident'] as const;
+export type MaintenanceCategory = (typeof MAINTENANCE_CATEGORIES)[number];
+
+export const MAINTENANCE_STATUSES = ['Scheduled', 'In Progress', 'Awaiting Parts', 'Completed'] as const;
+export type MaintenanceStatus = (typeof MAINTENANCE_STATUSES)[number];
+
+export const TYRE_STATUSES = ['In Service', 'In Stock', 'Retreaded', 'Scrapped'] as const;
+export type TyreStatus = (typeof TYRE_STATUSES)[number];
+
+// Finance ----------------------------------------------------------------------
+
+export const EXPENSE_CATEGORIES = [
+  'Tolls & Parking', 'Driver Meals', 'Loading/Unloading', 'Vehicle Wash', 'Driver Advance', 'Miscellaneous',
+] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+export const EXPENSE_STATUSES = ['Pending', 'Approved', 'Rejected', 'Reimbursed'] as const;
+export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];
+
+export const FUEL_TYPES = ['Diesel', 'Petrol'] as const;
+export type FuelType = (typeof FUEL_TYPES)[number];
+
+export const INVOICE_STATUSES = ['Draft', 'Pending Approval', 'Approved', 'Sent', 'Paid', 'Overdue', 'Disputed'] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+
+// Alerts / notifications --------------------------------------------------------
+
+export const ALERT_SEVERITIES = ['Critical', 'High', 'Medium', 'Low'] as const;
+export type AlertSeverity = (typeof ALERT_SEVERITIES)[number];
+
 // RBAC ---------------------------------------------------------------------
 
 export const PERMISSIONS = [
@@ -153,6 +221,19 @@ export const PERMISSIONS = [
   'rrr:create',
   'rrr:edit',
   'rrr:approve',
+  'jobs:view',
+  'jobs:manage',
+  'dispatch:view',
+  'dispatch:manage',
+  'trips:view',
+  'trips:manage',
+  'fleet:view',
+  'fleet:manage',
+  'maintenance:view',
+  'maintenance:manage',
+  'finance:view',
+  'finance:manage',
+  'alerts:view',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -163,17 +244,29 @@ export const ROLE_PERMISSIONS: Record<string, Permission[] | '*'> = {
     'followups:view', 'followups:manage', 'analytics:view', 'content:manage',
     'campaigns:manage', 'audit:view',
     'rrr:view', 'rrr:create', 'rrr:edit', 'rrr:approve',
+    // Operational manager: full read/write across the ops pipeline, fleet, maintenance and finance.
+    'jobs:view', 'jobs:manage', 'dispatch:view', 'dispatch:manage', 'trips:view', 'trips:manage',
+    'fleet:view', 'fleet:manage', 'maintenance:view', 'maintenance:manage', 'finance:view', 'finance:manage',
+    'alerts:view',
   ],
   sales_rep: [
     'leads:view', 'leads:create', 'leads:edit',
     'followups:view', 'followups:manage', 'analytics:view',
     'rrr:view', 'rrr:create', 'rrr:edit',
+    // Front-line: can run the RRR they raised through Job/Dispatch/Trip, but not
+    // manage fleet assets, maintenance work orders or finance records.
+    'jobs:view', 'jobs:manage', 'dispatch:view', 'dispatch:manage', 'trips:view', 'trips:manage',
+    'fleet:view', 'maintenance:view', 'finance:view', 'alerts:view',
   ],
   marketing: [
     'leads:view', 'analytics:view', 'content:manage', 'campaigns:manage', 'chatbot:manage',
     'rrr:view',
+    'jobs:view', 'dispatch:view', 'trips:view', 'fleet:view', 'maintenance:view', 'finance:view', 'alerts:view',
   ],
-  viewer: ['leads:view', 'followups:view', 'analytics:view', 'rrr:view'],
+  viewer: [
+    'leads:view', 'followups:view', 'analytics:view', 'rrr:view',
+    'jobs:view', 'dispatch:view', 'trips:view', 'fleet:view', 'maintenance:view', 'finance:view', 'alerts:view',
+  ],
 };
 
 export function permissionsForRole(role: string): Permission[] {
@@ -349,6 +442,252 @@ export interface RrrDoc extends Timestamps {
   rejectionReason?: string | null;
 }
 
+// Operations: Jobs, Trips ----------------------------------------------------
+
+export interface JobDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. JOB-000042
+  rrrId: ObjectId;
+  rrrRef: string;
+  customerId: ObjectId;
+  customerName: string;
+  pickup: string;
+  destination: string;
+  route?: string;
+  loadingInfo?: string;
+  unloadingInfo?: string;
+  vehicleType: string;
+  vehicleId?: ObjectId | null;
+  vehicleRef?: string | null;
+  driverId?: ObjectId | null;
+  driverName?: string | null;
+  scheduledDate: Date;
+  status: JobStatus;
+  tripId?: ObjectId | null;
+  tripRef?: string | null;
+  revenue: number;
+  billingStatus: BillingStatus;
+  notes?: string;
+  createdBy: ObjectId;
+  createdByName: string;
+}
+
+export interface TripDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. TRP-000042
+  jobId: ObjectId;
+  jobRef: string;
+  rrrId: ObjectId;
+  rrrRef: string;
+  customerId: ObjectId;
+  customerName: string;
+  vehicleId: ObjectId;
+  vehicleRef: string;
+  driverId: ObjectId;
+  driverName: string;
+  route: string;
+  startLocation?: string;
+  endLocation?: string;
+  startTime: Date;
+  endTime?: Date | null;
+  startOdometer?: number | null;
+  endOdometer?: number | null;
+  status: TripStatus;
+  notes?: string;
+  createdBy: ObjectId;
+  createdByName: string;
+}
+
+// Fleet ------------------------------------------------------------------------
+
+export interface VehicleDoc extends Timestamps {
+  _id?: ObjectId;
+  unitNumber: string;
+  registration: string;
+  type: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  homeBranch?: string;
+  status: VehicleStatus;
+  odometer: number;
+  lastServiceDate?: Date | null;
+  nextServiceDue?: Date | null;
+  insuranceExpiry?: Date | null;
+  registrationExpiry?: Date | null;
+  driverId?: ObjectId | null;
+  driverName?: string | null;
+  notes?: string;
+  createdBy: ObjectId;
+}
+
+export interface DriverDoc extends Timestamps {
+  _id?: ObjectId;
+  name: string;
+  phone?: string;
+  nationality?: string;
+  licenseNumber: string;
+  licenseExpiry?: Date | null;
+  homeBranch?: string;
+  status: DriverStatus;
+  assignedVehicleId?: ObjectId | null;
+  assignedVehicleRef?: string | null;
+  joinDate?: Date | null;
+  notes?: string;
+  createdBy: ObjectId;
+}
+
+// Maintenance --------------------------------------------------------------------
+
+export interface WorkshopDoc extends Timestamps {
+  _id?: ObjectId;
+  name: string;
+  type: 'Internal' | 'External';
+  city?: string;
+  specialties?: string[];
+  contact?: string;
+  createdBy: ObjectId;
+}
+
+export interface MaintenancePartLine {
+  name: string;
+  qty: number;
+  cost: number;
+}
+
+export interface MaintenanceOrderDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. WO-000042
+  vehicleId: ObjectId;
+  vehicleRef: string;
+  workshopId: ObjectId;
+  workshopName: string;
+  category: MaintenanceCategory;
+  problem: string;
+  diagnosis?: string;
+  workPerformed?: string;
+  parts: MaintenancePartLine[];
+  labourCost: number;
+  startDate: Date;
+  endDate?: Date | null;
+  warranty?: string;
+  status: MaintenanceStatus;
+  odometer?: number;
+  createdBy: ObjectId;
+}
+
+export interface PartDoc extends Timestamps {
+  _id?: ObjectId;
+  name: string;
+  category?: string;
+  sku: string;
+  stock: number;
+  minStock: number;
+  unitCost: number;
+  supplier?: string;
+  createdBy: ObjectId;
+}
+
+export interface TyreDoc extends Timestamps {
+  _id?: ObjectId;
+  brand: string;
+  size: string;
+  serial: string;
+  vehicleId?: ObjectId | null;
+  vehicleRef?: string | null;
+  position?: string;
+  installKm?: number;
+  removalKm?: number | null;
+  treadDepth?: number;
+  cost?: number;
+  status: TyreStatus;
+  replacementReason?: string;
+  createdBy: ObjectId;
+}
+
+// Finance ------------------------------------------------------------------------
+
+export interface ExpenseDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. EX-000042
+  category: ExpenseCategory;
+  tripId?: ObjectId | null;
+  tripRef?: string | null;
+  driverId?: ObjectId | null;
+  driverName?: string | null;
+  vehicleId?: ObjectId | null;
+  vehicleRef?: string | null;
+  amount: number;
+  date: Date;
+  description?: string;
+  approvalStatus: ExpenseStatus;
+  createdBy: ObjectId;
+  createdByName: string;
+}
+
+export interface FuelVoucherDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. FV-000042
+  vehicleId: ObjectId;
+  vehicleRef: string;
+  driverId?: ObjectId | null;
+  driverName?: string | null;
+  station?: string;
+  date: Date;
+  odometer?: number;
+  litres: number;
+  rate: number;
+  total: number; // = litres * rate, computed server-side at write time
+  fuelType: FuelType;
+  tripId?: ObjectId | null;
+  tripRef?: string | null;
+  createdBy: ObjectId;
+}
+
+export interface InvoiceCharge {
+  description: string;
+  amount: number;
+}
+
+export interface InvoiceDoc extends Timestamps {
+  _id?: ObjectId;
+  ref: string; // e.g. INV-000042
+  customerId: ObjectId;
+  customerName: string;
+  contractRef?: string;
+  jobIds: ObjectId[];
+  jobRefs: string[];
+  tripIds: ObjectId[];
+  tripRefs: string[];
+  charges: InvoiceCharge[];
+  additionalCharges: InvoiceCharge[];
+  discount: number;
+  taxRate: number;
+  status: InvoiceStatus;
+  issueDate: Date;
+  dueDate: Date;
+  createdBy: ObjectId;
+}
+
+// Alerts / notifications ----------------------------------------------------------
+
+export interface AlertDoc {
+  _id?: ObjectId;
+  severity: AlertSeverity;
+  module: string;
+  title: string;
+  description?: string;
+  entityType?: string;
+  entityRef?: string;
+  /** Gate: only staff who hold this permission can see a broadcast alert. null = everyone authenticated. */
+  visibleToPermission?: Permission | null;
+  /** A specific recipient (e.g. the RRR requester). null = broadcast to everyone matching visibleToPermission. */
+  recipientId?: ObjectId | null;
+  /** Who has dismissed a broadcast alert (per-viewer read state). */
+  readBy: ObjectId[];
+  createdAt: Date;
+}
+
 export interface SubmissionDoc {
   _id?: ObjectId;
   type: SubmissionType;
@@ -517,6 +856,70 @@ export const INDEXES: Record<string, IndexDef[]> = {
     { key: { requestedBy: 1, createdAt: -1 } },
     { key: { requiredDate: 1 } },
     { key: { priority: 1 } },
+  ],
+  [COLLECTIONS.jobs]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { rrrId: 1 } },
+    { key: { status: 1, createdAt: -1 } },
+    { key: { customerId: 1, createdAt: -1 } },
+    { key: { vehicleId: 1 }, options: { sparse: true } },
+    { key: { driverId: 1 }, options: { sparse: true } },
+  ],
+  [COLLECTIONS.trips]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { jobId: 1 } },
+    { key: { vehicleId: 1, createdAt: -1 } },
+    { key: { driverId: 1, createdAt: -1 } },
+    { key: { status: 1, createdAt: -1 } },
+  ],
+  [COLLECTIONS.vehicles]: [
+    { key: { registration: 1 }, options: { unique: true } },
+    { key: { unitNumber: 1 }, options: { unique: true } },
+    { key: { status: 1 } },
+  ],
+  [COLLECTIONS.drivers]: [
+    { key: { licenseNumber: 1 }, options: { unique: true } },
+    { key: { status: 1 } },
+    { key: { assignedVehicleId: 1 }, options: { sparse: true } },
+  ],
+  [COLLECTIONS.workshops]: [
+    { key: { name: 1 } },
+  ],
+  [COLLECTIONS.maintenanceOrders]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { vehicleId: 1, createdAt: -1 } },
+    { key: { workshopId: 1, createdAt: -1 } },
+    { key: { status: 1 } },
+  ],
+  [COLLECTIONS.parts]: [
+    { key: { sku: 1 }, options: { unique: true } },
+    { key: { name: 1 } },
+  ],
+  [COLLECTIONS.tyres]: [
+    { key: { serial: 1 }, options: { unique: true } },
+    { key: { vehicleId: 1 }, options: { sparse: true } },
+    { key: { status: 1 } },
+  ],
+  [COLLECTIONS.expenses]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { tripId: 1 }, options: { sparse: true } },
+    { key: { driverId: 1, createdAt: -1 } },
+    { key: { approvalStatus: 1, createdAt: -1 } },
+  ],
+  [COLLECTIONS.fuelVouchers]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { vehicleId: 1, createdAt: -1 } },
+    { key: { tripId: 1 }, options: { sparse: true } },
+  ],
+  [COLLECTIONS.invoices]: [
+    { key: { ref: 1 }, options: { unique: true } },
+    { key: { customerId: 1, createdAt: -1 } },
+    { key: { status: 1, dueDate: 1 } },
+  ],
+  [COLLECTIONS.alerts]: [
+    { key: { createdAt: -1 } },
+    { key: { recipientId: 1, createdAt: -1 }, options: { sparse: true } },
+    { key: { visibleToPermission: 1, createdAt: -1 }, options: { sparse: true } },
   ],
   [COLLECTIONS.submissions]: [
     { key: { leadId: 1, createdAt: -1 } },

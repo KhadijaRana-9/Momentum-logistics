@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  AlertTriangle, ArrowRight, Building2, Calendar, Fuel, Gauge, MapPin,
-  Phone, Printer, Receipt, Route as RouteIcon, ShieldCheck, Truck, UserRound,
+  ArrowRight, Building2, Calendar, Gauge, MapPin, Printer, Route as RouteIcon, Truck, UserRound,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
@@ -10,20 +9,40 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { WorkflowStepper } from '@/components/ui/WorkflowStepper';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { getTrip, tripCost, tripProfit, TRIP_STAGES } from '@/data/trips';
-import { getCustomer } from '@/data/customers';
-import { getVehicle } from '@/data/vehicles';
-import { getDriver } from '@/data/drivers';
+import { useAuth } from '@/lib/auth';
+import { opsApi, TRIP_STATUSES, type Trip, type Expense, type FuelVoucher } from '@/lib/opsApi';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 
 export function TripSheet() {
   const { id } = useParams();
+  const { can } = useAuth();
   const toast = useToast();
-  const initial = getTrip(id);
-  const [status, setStatus] = useState(initial?.status);
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [fuel, setFuel] = useState<FuelVoucher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [notFoundErr, setNotFoundErr] = useState(false);
 
-  if (!initial) {
+  function load() {
+    if (!id) return;
+    setLoading(true);
+    Promise.all([
+      opsApi.trips.get(id),
+      opsApi.expenses.list({ tripId: id, limit: 50 }),
+      opsApi.fuel.list({ tripId: id, limit: 50 }),
+    ])
+      .then(([t, e, f]) => { setTrip(t); setExpenses(e.items); setFuel(f.items); setNotFoundErr(false); })
+      .catch(() => setNotFoundErr(true))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
+
+  if (loading) return <div className="p-10 text-center text-sm text-slate-400">Loading trip sheet…</div>;
+
+  if (notFoundErr || !trip) {
     return (
       <div>
         <PageHeader title="Trip Not Found" breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/app/trips' }]} />
@@ -32,61 +51,44 @@ export function TripSheet() {
     );
   }
 
-  const trip = { ...initial, status: status ?? initial.status };
-  const customer = getCustomer(trip.customerId);
-  const vehicle = getVehicle(trip.vehicleId);
-  const driver = getDriver(trip.driverId);
-  const cost = tripCost(trip);
-  const profit = tripProfit(trip);
-  const margin = trip.revenue ? (profit / trip.revenue) * 100 : 0;
-  const isDelayed = trip.status === 'Delayed';
-  const stageIdx = TRIP_STAGES.indexOf(trip.status as (typeof TRIP_STAGES)[number]);
-  const currentStage = stageIdx >= 0 ? trip.status : 'In Transit';
-  const nextStage = stageIdx >= 0 && stageIdx < TRIP_STAGES.length - 1 ? TRIP_STAGES[stageIdx + 1] : null;
+  const fuelCost = fuel.reduce((s, f) => s + f.total, 0);
+  const expenseCost = expenses.reduce((s, e) => s + e.amount, 0);
+  const totalCost = fuelCost + expenseCost;
+  const stageIdx = TRIP_STATUSES.indexOf(trip.status);
+  const nextStage = stageIdx >= 0 && stageIdx < TRIP_STATUSES.length - 1 ? TRIP_STATUSES[stageIdx + 1] : null;
 
-  function advance() {
-    if (!nextStage) return;
-    setStatus(nextStage);
-    toast({ type: 'success', title: 'Trip status updated', description: `${trip.id} moved to ${nextStage}` });
+  async function advance() {
+    if (!nextStage || !trip) return;
+    setBusy(true);
+    try {
+      const updated = await opsApi.trips.setStatus(trip.id, nextStage);
+      setTrip(updated);
+      toast({ type: 'success', title: 'Trip status updated', description: `${trip.ref} moved to ${nextStage}` });
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not update trip', description: err instanceof Error ? err.message : 'Please try again' });
+    } finally {
+      setBusy(false);
+    }
   }
-
-  const expenseRows = [
-    { label: 'Fuel', value: trip.fuelCost, detail: `${trip.fuelLitres} L` },
-    { label: 'Tolls', value: trip.tolls },
-    { label: 'Meals & Allowance', value: trip.meals },
-    { label: 'Loading / Unloading', value: trip.loadingCharges },
-    { label: 'Miscellaneous', value: trip.miscExpenses },
-    { label: 'Driver Incentives', value: trip.incentives },
-  ];
 
   return (
     <div>
       <PageHeader
-        title={trip.id}
-        breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/app/trips' }, { label: trip.id }]}
-        description={`${trip.route} — Job ${trip.jobId} · RRR ${trip.rrrId}`}
+        title={trip.ref}
+        breadcrumbs={[{ label: 'Operations' }, { label: 'Trips', to: '/app/trips' }, { label: trip.ref }]}
+        description={`${trip.route} — Job ${trip.jobRef} · RRR ${trip.rrrRef}`}
         actions={<>
-          <Button variant="secondary" size="sm" icon={Printer}>Print Trip Sheet</Button>
-          {nextStage && <Button variant="primary" size="sm" icon={ArrowRight} onClick={advance}>Mark as {nextStage}</Button>}
+          <Button variant="secondary" size="sm" icon={Printer} onClick={() => window.print()}>Print Trip Sheet</Button>
+          {nextStage && can('trips:manage') && <Button variant="primary" size="sm" icon={ArrowRight} disabled={busy} onClick={advance}>Mark as {nextStage}</Button>}
         </>}
       />
-
-      {isDelayed && (
-        <div className="mb-5 flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <AlertTriangle size={18} className="shrink-0 text-rose-600" />
-          <div>
-            <p className="text-[13px] font-semibold text-rose-700">This trip is running behind schedule</p>
-            <p className="text-xs text-rose-600">ETA {trip.eta ? formatDateTime(trip.eta) : 'unknown'} — dispatcher has been notified</p>
-          </div>
-        </div>
-      )}
 
       <Card className="mb-5 px-5 py-5">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Trip Progression</span>
           <StatusBadge status={trip.status} />
         </div>
-        <WorkflowStepper stages={TRIP_STAGES} current={currentStage} />
+        <WorkflowStepper stages={TRIP_STATUSES} current={trip.status} />
       </Card>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -94,14 +96,13 @@ export function TripSheet() {
           <Card>
             <CardHeader title="Journey Details" />
             <CardBody className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-              <Info icon={MapPin} label="Start Location" value={trip.startLocation} />
-              <Info icon={MapPin} label="End Location" value={trip.endLocation} />
+              <Info icon={MapPin} label="Start Location" value={trip.startLocation ?? '—'} />
+              <Info icon={MapPin} label="End Location" value={trip.endLocation ?? '—'} />
               <Info icon={Calendar} label="Start Time" value={formatDateTime(trip.startTime)} />
-              <Info icon={Calendar} label="End Time" value={trip.endTime ? formatDateTime(trip.endTime) : trip.eta ? `ETA ${formatDateTime(trip.eta)}` : 'In progress'} />
-              <Info icon={Gauge} label="Start Odometer" value={`${trip.startOdometer.toLocaleString()} km`} />
-              <Info icon={Gauge} label="End Odometer" value={trip.endOdometer ? `${trip.endOdometer.toLocaleString()} km` : 'Pending'} />
-              <Info icon={RouteIcon} label="Distance" value={`${trip.distance} km`} />
-              <Info icon={Fuel} label="Fuel Consumption" value={trip.fuelLitres ? `${trip.fuelLitres} L (${(trip.distance / (trip.fuelLitres || 1)).toFixed(1)} km/L)` : 'Not yet logged'} />
+              <Info icon={Calendar} label="End Time" value={trip.endTime ? formatDateTime(trip.endTime) : 'In progress'} />
+              <Info icon={Gauge} label="Start Odometer" value={trip.startOdometer != null ? `${trip.startOdometer.toLocaleString()} km` : 'Not logged'} />
+              <Info icon={Gauge} label="End Odometer" value={trip.endOdometer != null ? `${trip.endOdometer.toLocaleString()} km` : 'Pending'} />
+              <Info icon={RouteIcon} label="Distance" value={trip.distanceKm != null ? `${trip.distanceKm} km` : 'Pending odometer readings'} />
             </CardBody>
           </Card>
 
@@ -111,32 +112,39 @@ export function TripSheet() {
               <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-3.5">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Truck size={18} /></span>
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold text-brand-950">{vehicle?.unitNumber} — {vehicle?.type}</p>
-                  <p className="truncate text-xs text-slate-400">{vehicle?.registration} · {vehicle?.make} {vehicle?.model}</p>
+                  <p className="truncate text-[13px] font-semibold text-brand-950">{trip.vehicleRef}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-3.5">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-700"><UserRound size={18} /></span>
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold text-brand-950">{driver?.name}</p>
-                  <p className="truncate text-xs text-slate-400">{driver?.licenseNumber} · {driver?.phone}</p>
+                  <p className="truncate text-[13px] font-semibold text-brand-950">{trip.driverName}</p>
                 </div>
               </div>
             </CardBody>
           </Card>
 
           <Card>
-            <CardHeader title="Expenses & Charges" subtitle="Recorded against this trip sheet" />
+            <CardHeader title="Fuel & Expenses" subtitle="Recorded against this trip from the Finance module" />
             <div className="divide-y divide-slate-100 px-5">
-              {expenseRows.map((row) => (
-                <div key={row.label} className="flex items-center justify-between py-2.5 text-[13px]">
-                  <span className="text-slate-600">{row.label} {row.detail && <span className="text-xs text-slate-400">({row.detail})</span>}</span>
-                  <span className="font-medium text-brand-950">{formatCurrency(row.value)}</span>
+              {fuel.map((f) => (
+                <div key={f.id} className="flex items-center justify-between py-2.5 text-[13px]">
+                  <span className="text-slate-600">Fuel — {f.station ?? f.ref} <span className="text-xs text-slate-400">({f.litres} L)</span></span>
+                  <span className="font-medium text-brand-950">{formatCurrency(f.total)}</span>
                 </div>
               ))}
+              {expenses.map((e) => (
+                <div key={e.id} className="flex items-center justify-between py-2.5 text-[13px]">
+                  <span className="text-slate-600">{e.category} {e.description && <span className="text-xs text-slate-400">({e.description})</span>}</span>
+                  <span className="font-medium text-brand-950">{formatCurrency(e.amount)}</span>
+                </div>
+              ))}
+              {fuel.length === 0 && expenses.length === 0 && (
+                <p className="py-4 text-xs text-slate-400">No fuel or expense entries logged against this trip yet — add them from Finance → Fuel / Expenses.</p>
+              )}
               <div className="flex items-center justify-between py-3 text-[13px] font-semibold">
                 <span className="text-brand-950">Total Trip Cost</span>
-                <span className="text-brand-950">{formatCurrency(cost)}</span>
+                <span className="text-brand-950">{formatCurrency(totalCost)}</span>
               </div>
             </div>
           </Card>
@@ -144,18 +152,14 @@ export function TripSheet() {
 
         <div className="flex flex-col gap-5">
           <Card>
-            <CardHeader title="Financial Summary" />
+            <CardHeader title="Cost Summary" />
             <CardBody className="flex flex-col gap-3">
-              <SummaryRow label="Revenue" value={formatCurrency(trip.revenue)} />
-              <SummaryRow label="Total Cost" value={formatCurrency(cost)} />
+              <SummaryRow label="Fuel Cost" value={formatCurrency(fuelCost)} />
+              <SummaryRow label="Other Expenses" value={formatCurrency(expenseCost)} />
               <div className="border-t border-slate-100 pt-3">
-                <SummaryRow label="Gross Profit" value={formatCurrency(profit)} strong tone={profit >= 0 ? 'success' : 'danger'} />
-                <SummaryRow label="Margin" value={`${margin.toFixed(1)}%`} strong tone={margin >= 0 ? 'success' : 'danger'} />
+                <SummaryRow label="Total Cost" value={formatCurrency(totalCost)} strong />
               </div>
-              <div className="mt-1 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 text-xs">
-                <span className="text-slate-500">Driver Advance</span>
-                <span className="text-right font-medium text-brand-950">{formatCurrency(trip.advance)}</span>
-              </div>
+              <p className="text-[11px] text-slate-400">Revenue and billing for this trip are tracked on its Job and any linked Invoice.</p>
             </CardBody>
           </Card>
 
@@ -164,30 +168,10 @@ export function TripSheet() {
             <CardBody className="flex flex-col gap-2.5">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Building2 size={16} /></span>
-                <p className="text-[13px] font-semibold text-brand-950">{customer?.name}</p>
+                <p className="text-[13px] font-semibold text-brand-950">{trip.customerName}</p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-500"><Phone size={12} /> {customer?.contactPhone}</div>
             </CardBody>
           </Card>
-
-          <Card>
-            <CardHeader title="Receipts & Documents" />
-            <CardBody className="flex flex-col gap-2">
-              {['Fuel Receipt.jpg', 'Toll Receipt.pdf', 'POD — Signed.pdf'].map((doc) => (
-                <div key={doc} className="flex items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2">
-                  <Receipt size={14} className="text-slate-400" />
-                  <span className="flex-1 truncate text-xs font-medium text-slate-600">{doc}</span>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-
-          {trip.status === 'Verified' || trip.status === 'Financially Closed' ? (
-            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <ShieldCheck size={17} className="text-emerald-600" />
-              <p className="text-xs font-medium text-emerald-700">Trip sheet verified and reconciled</p>
-            </div>
-          ) : null}
         </div>
       </div>
     </div>
@@ -206,15 +190,11 @@ function Info({ icon: Icon, label, value }: { icon: typeof MapPin; label: string
   );
 }
 
-function SummaryRow({ label, value, strong, tone }: { label: string; value: string; strong?: boolean; tone?: 'success' | 'danger' }) {
+function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className={strong ? 'text-[13px] font-medium text-slate-600' : 'text-[13px] text-slate-500'}>{label}</span>
-      <span className={
-        strong
-          ? tone === 'success' ? 'text-base font-bold text-emerald-600' : tone === 'danger' ? 'text-base font-bold text-rose-600' : 'text-base font-bold text-brand-950'
-          : 'text-[13px] font-medium text-brand-950'
-      }>{value}</span>
+      <span className={strong ? 'text-base font-bold text-brand-950' : 'text-[13px] font-medium text-brand-950'}>{value}</span>
     </div>
   );
 }

@@ -1,32 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, BarChart3, Calendar, Download, FileBarChart, Printer, Search } from 'lucide-react';
+import { ArrowRight, FileBarChart, Printer, Search } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SearchInput } from '@/components/ui/SearchInput';
-import { Field, Input, Select } from '@/components/ui/Field';
 import { Drawer } from '@/components/ui/Drawer';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { reportCategories, type ReportDef } from '@/data/reports';
-import { rrrs } from '@/data/rrr';
-import { getCustomer } from '@/data/customers';
+import { rrrApi, type Rrr } from '@/pages/rrr/rrrApi';
 import { formatDate } from '@/lib/utils';
 import { StatusBadge, PriorityBadge } from '@/components/ui/Badge';
 
 export function ReportsPage() {
   const [search, setSearch] = useState('');
   const [active, setActive] = useState<ReportDef | null>(null);
+  const [rrrs, setRrrs] = useState<Rrr[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  useEffect(() => {
+    if (!active) return;
+    setLoadingPreview(true);
+    rrrApi.list({ limit: 50 }).then((res) => setRrrs(res.items)).finally(() => setLoadingPreview(false));
+  }, [active]);
 
   const filteredCategories = reportCategories
     .map((cat) => ({ ...cat, reports: cat.reports.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase())) }))
     .filter((cat) => cat.reports.length > 0);
 
-  const columns: Column<(typeof rrrs)[number]>[] = [
-    { key: 'id', header: 'RRR #', render: (r) => <span className="font-semibold text-brand-800">{r.id}</span> },
-    { key: 'customer', header: 'Customer', render: (r) => getCustomer(r.customerId)?.name },
-    { key: 'route', header: 'Route', render: (r) => r.route },
-    { key: 'date', header: 'Date', render: (r) => formatDate(r.date, 'short') },
+  const columns: Column<Rrr>[] = [
+    { key: 'ref', header: 'RRR #', render: (r) => <span className="font-semibold text-brand-800">{r.ref}</span> },
+    { key: 'customer', header: 'Customer', render: (r) => r.customerName },
+    { key: 'route', header: 'Route', render: (r) => `${r.pickup} → ${r.destination}` },
+    { key: 'date', header: 'Date', render: (r) => formatDate(r.createdAt, 'short') },
     { key: 'priority', header: 'Priority', render: (r) => <PriorityBadge priority={r.priority} /> },
     { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
   ];
@@ -35,7 +41,7 @@ export function ReportsPage() {
     <div>
       <PageHeader
         title="Reports Center"
-        description="Generate operational, fleet, maintenance, finance, and management reports."
+        description="Browse operational, fleet, maintenance, and finance report types."
         breadcrumbs={[{ label: 'Analytics' }, { label: 'Reports' }]}
       />
 
@@ -83,25 +89,14 @@ export function ReportsPage() {
         width="lg"
         title={active?.name}
         subtitle={active?.description}
-        footer={<>
-          <Button variant="secondary" icon={Printer}>Print</Button>
-          <Button variant="primary" icon={Download}>Export CSV</Button>
-        </>}
+        footer={<Button variant="secondary" icon={Printer} onClick={() => window.print()}>Print</Button>}
       >
         {active && (
           <div>
-            <div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <Field label="From"><Input type="date" defaultValue="2026-08-01" /></Field>
-              <Field label="To"><Input type="date" defaultValue="2026-08-20" /></Field>
-              <Field label="Branch"><Select placeholder="All Branches" options={[{ label: 'Dubai HQ', value: 'dxb' }, { label: 'Abu Dhabi', value: 'auh' }]} /></Field>
-              <Button size="sm" variant="primary" icon={BarChart3}>Generate</Button>
-            </div>
-            <div className="mb-4 flex items-center gap-2 text-xs text-slate-400">
-              <Calendar size={13} /> Showing sample data for Aug 1 – Aug 20, 2026
-            </div>
+            <p className="mb-4 text-xs text-slate-400">This preview uses live RRR data as a representative sample — full per-report filtering (date range, branch) is not built yet for every report type in this catalog.</p>
             <Card>
-              <CardHeader title="Preview" subtitle={`${rrrs.length} records`} />
-              <DataTable columns={columns} data={rrrs} keyField={(r) => r.id} pageSize={6} />
+              <CardHeader title="RRR Preview" subtitle={`${rrrs.length} most recent records`} />
+              <DataTable columns={columns} data={rrrs} keyField={(r) => r.id} loading={loadingPreview} pageSize={rrrs.length || 6} />
             </Card>
           </div>
         )}

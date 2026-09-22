@@ -1,9 +1,10 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronsLeft, Compass } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { navSections } from './navConfig';
-import { unreadAlertCount } from '@/data/alerts';
+import { opsApi } from '@/lib/opsApi';
 import { useAuth } from '@/lib/auth';
 
 interface SidebarProps {
@@ -12,8 +13,14 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const alertCount = unreadAlertCount();
   const { can } = useAuth();
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    if (!can('alerts:view')) return;
+    opsApi.alerts.list({ unread: 'true', limit: 1 }).then((res) => setAlertCount(res.total)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const visibleSections = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => !item.permission || can(item.permission)) }))
     .filter((section) => section.items.length > 0);

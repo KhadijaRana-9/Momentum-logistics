@@ -1,25 +1,36 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Download, LayoutGrid, List as ListIcon, Plus } from 'lucide-react';
-import { jobs as jobsData } from '@/data/jobs';
+import { LayoutGrid, List as ListIcon, Plus } from 'lucide-react';
+import { opsApi, type Job } from '@/lib/opsApi';
 import { JobListView } from './JobListView';
 import { JobBoardView } from './JobBoardView';
-import { useToast } from '@/components/ui/Toast';
 
 export function JobsPage() {
   const [view, setView] = useState<'list' | 'board'>('board');
   const navigate = useNavigate();
-  const toast = useToast();
-  const [jobs] = useState(jobsData);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setLoading(true);
+    opsApi.jobs
+      .list({ limit: 200 }, ctrl.signal)
+      .then((res) => { setJobs(res.items); setError(null); })
+      .catch((err) => { if (err.name !== 'AbortError') setError(err.message ?? 'Failed to load jobs'); })
+      .finally(() => setLoading(false));
+    return () => ctrl.abort();
+  }, []);
 
   const summary = useMemo(() => ({
     total: jobs.length,
     unassigned: jobs.filter((j) => !j.vehicleId).length,
-    active: jobs.filter((j) => ['Dispatched', 'In Transit'].includes(j.status)).length,
+    active: jobs.filter((j) => ['Dispatched', 'In Progress'].includes(j.status)).length,
     revenue: jobs.reduce((s, j) => s + j.revenue, 0),
   }), [jobs]);
 
@@ -29,13 +40,10 @@ export function JobsPage() {
         title="Jobs"
         description="Track job execution from assignment through delivery and invoicing."
         breadcrumbs={[{ label: 'Operations' }, { label: 'Jobs' }]}
-        actions={
-          <>
-            <Button variant="secondary" size="sm" icon={Download}>Export</Button>
-            <Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/app/rrr')}>New Job from RRR</Button>
-          </>
-        }
+        actions={<Button variant="primary" size="sm" icon={Plus} onClick={() => navigate('/app/rrr')}>New Job from RRR</Button>}
       />
+
+      {error && <Card className="mb-4 p-4 text-sm text-rose-700">{error}</Card>}
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="px-4 py-3.5"><p className="text-xs font-medium text-slate-500">Total Jobs</p><p className="mt-1 font-display text-2xl font-bold text-brand-800">{summary.total}</p></Card>
@@ -56,7 +64,7 @@ export function JobsPage() {
         </div>
       </div>
 
-      {view === 'list' ? <JobListView jobs={jobs} /> : <JobBoardView jobs={jobs} onMove={(id, status) => toast({ type: 'success', title: 'Job updated', description: `${id} moved to ${status}` })} />}
+      {view === 'list' ? <JobListView jobs={jobs} loading={loading} /> : <JobBoardView jobs={jobs} />}
     </div>
   );
 }

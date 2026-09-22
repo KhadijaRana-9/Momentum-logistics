@@ -85,32 +85,50 @@ function App() {
                   </Route>
                 </Route>
 
-                <Route path="jobs" element={<JobsPage />} />
-                <Route path="dispatch" element={<DispatchCenter />} />
+                <Route path="jobs" element={<ProtectedRoute permission="jobs:view" />}>
+                  <Route index element={<JobsPage />} />
+                </Route>
+                <Route path="dispatch" element={<ProtectedRoute permission="dispatch:view" />}>
+                  <Route index element={<DispatchCenter />} />
+                </Route>
 
-                <Route path="trips" element={<TripList />} />
-                <Route path="trips/:id" element={<TripSheet />} />
+                <Route path="trips" element={<ProtectedRoute permission="trips:view" />}>
+                  <Route index element={<TripList />} />
+                  <Route path=":id" element={<TripSheet />} />
+                </Route>
 
-                <Route path="fleet/vehicles" element={<VehicleList />} />
-                <Route path="fleet/vehicles/:id" element={<VehicleDetail />} />
-                <Route path="fleet/drivers" element={<DriverList />} />
-                <Route path="fleet/drivers/:id" element={<DriverDetail />} />
-                <Route path="fleet/tracking" element={<LiveTracking />} />
+                <Route path="fleet" element={<ProtectedRoute permission="fleet:view" />}>
+                  <Route path="vehicles" element={<VehicleList />} />
+                  <Route path="vehicles/:id" element={<VehicleDetail />} />
+                  <Route path="drivers" element={<DriverList />} />
+                  <Route path="drivers/:id" element={<DriverDetail />} />
+                  <Route path="tracking" element={<LiveTracking />} />
+                </Route>
 
-                <Route path="maintenance/workshops" element={<WorkshopsPage />} />
-                <Route path="maintenance" element={<MaintenancePage />} />
-                <Route path="maintenance/parts" element={<PartsPage />} />
-                <Route path="maintenance/tyres" element={<TyresPage />} />
+                <Route path="maintenance" element={<ProtectedRoute permission="maintenance:view" />}>
+                  <Route path="workshops" element={<WorkshopsPage />} />
+                  <Route index element={<MaintenancePage />} />
+                  <Route path="parts" element={<PartsPage />} />
+                  <Route path="tyres" element={<TyresPage />} />
+                </Route>
 
-                <Route path="finance/expenses" element={<ExpensesPage />} />
-                <Route path="finance/fuel" element={<FuelPage />} />
-                <Route path="finance/billing" element={<BillingPage />} />
-                <Route path="finance/invoices" element={<InvoicesPage />} />
-                <Route path="finance/vehicle-pnl" element={<VehiclePnlPage />} />
+                <Route path="finance" element={<ProtectedRoute permission="finance:view" />}>
+                  <Route path="expenses" element={<ExpensesPage />} />
+                  <Route path="fuel" element={<FuelPage />} />
+                  <Route path="billing" element={<BillingPage />} />
+                  <Route path="invoices" element={<InvoicesPage />} />
+                  <Route path="vehicle-pnl" element={<VehiclePnlPage />} />
+                </Route>
 
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
-                <Route path="alerts" element={<AlertsPage />} />
+                <Route path="reports" element={<ProtectedRoute permission="analytics:view" />}>
+                  <Route index element={<ReportsPage />} />
+                </Route>
+                <Route path="analytics" element={<ProtectedRoute permission="analytics:view" />}>
+                  <Route index element={<AnalyticsPage />} />
+                </Route>
+                <Route path="alerts" element={<ProtectedRoute permission="alerts:view" />}>
+                  <Route index element={<AlertsPage />} />
+                </Route>
 
                 <Route element={<ProtectedRoute permission="users:manage" />}>
                   <Route path="admin/users" element={<UsersPage />} />

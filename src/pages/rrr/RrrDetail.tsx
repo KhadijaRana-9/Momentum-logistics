@@ -21,6 +21,7 @@ import { ApiError } from '@/lib/apiClient';
 import { rrrApi, type Rrr, type RrrCustomer } from './rrrApi';
 import { crmApi } from '@/pages/crm/crmApi';
 import type { AuditLogEntry } from '@/pages/crm/types';
+import { opsApi } from '@/lib/opsApi';
 
 const PIPELINE_STAGES = ['Draft', 'Submitted', 'Approved', 'Assigned', 'Job Created', 'Dispatched', 'Completed'];
 
@@ -85,6 +86,21 @@ export function RrrDetail() {
     }
   }
 
+  async function createJob() {
+    if (!rrr) return;
+    setBusy(true);
+    try {
+      const job = await opsApi.jobs.createFromRrr(rrr.id);
+      toast({ type: 'success', title: 'Job created', description: `${job.ref} — assign a vehicle & driver in Dispatch Center` });
+      await load();
+      navigate('/app/dispatch');
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not create job', description: err instanceof ApiError ? err.message : undefined });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) return <CardSkeleton />;
   if (error || !rrr) {
     return (
@@ -116,6 +132,9 @@ export function RrrDetail() {
                 }}>Reject</Button>
                 <Button variant="primary" size="sm" icon={CheckCircle2} loading={busy} onClick={() => setStatus('Approved')}>Approve</Button>
               </>
+            )}
+            {rrr.status === 'Approved' && !rrr.jobRef && can('jobs:manage') && (
+              <Button variant="primary" size="sm" icon={Briefcase} loading={busy} onClick={createJob}>Create Job</Button>
             )}
           </>
         }
@@ -167,8 +186,8 @@ export function RrrDetail() {
                   <InfoGrid>
                     <Info label="Vehicle Type" value={rrr.vehicleType} />
                     <Info label="Driver Required" value={rrr.driverRequired ? 'Yes' : 'No'} />
-                    <Info label="Assigned Vehicle" value={rrr.assignedVehicleRef ?? 'Not yet assigned — Fleet module not connected'} />
-                    <Info label="Assigned Driver" value={rrr.assignedDriverRef ?? 'Not yet assigned — Fleet module not connected'} />
+                    <Info label="Assigned Vehicle" value={rrr.assignedVehicleRef ?? (rrr.jobRef ? 'See the linked Job in Dispatch Center' : 'Assigned once a Job is created and dispatched')} />
+                    <Info label="Assigned Driver" value={rrr.assignedDriverRef ?? (rrr.jobRef ? 'See the linked Job in Dispatch Center' : 'Assigned once a Job is created and dispatched')} />
                   </InfoGrid>
                 </SectionBlock>
                 <SectionBlock icon={ClipboardList} title="Additional Information">
@@ -230,8 +249,10 @@ export function RrrDetail() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><Briefcase size={16} /></span>
                   <p className="flex-1 text-[13px] font-semibold text-brand-950">{rrr.jobRef}</p>
                 </button>
+              ) : rrr.status === 'Approved' ? (
+                <p className="text-xs text-slate-400">No job created yet — use "Create Job" above.</p>
               ) : (
-                <p className="text-xs text-slate-400">No job created yet. The Jobs module isn't connected to Operations yet.</p>
+                <p className="text-xs text-slate-400">A job can be created once this RRR is Approved.</p>
               )}
             </CardBody>
           </Card>

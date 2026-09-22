@@ -3,15 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X, ClipboardList, Briefcase, Route, Truck, UserRound, FileText, Wrench, PackageSearch, Building2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { rrrs } from '@/data/rrr';
-import { jobs } from '@/data/jobs';
-import { trips } from '@/data/trips';
-import { vehicles } from '@/data/vehicles';
-import { drivers } from '@/data/drivers';
-import { customers } from '@/data/customers';
-import { invoices } from '@/data/invoices';
-import { workshops } from '@/data/workshops';
-import { parts } from '@/data/parts';
+import { useAuth } from '@/lib/auth';
+import { opsApi } from '@/lib/opsApi';
+import { rrrApi } from '@/pages/rrr/rrrApi';
 
 interface SearchResult {
   id: string;
@@ -22,34 +16,64 @@ interface SearchResult {
   to: string;
 }
 
-function buildIndex(): SearchResult[] {
-  return [
-    ...rrrs.map((r) => ({ id: r.id, title: r.id, subtitle: `${r.route} — ${r.status}`, group: 'RRR', icon: ClipboardList, to: `/app/rrr/${r.id}` })),
-    ...jobs.map((j) => ({ id: j.id, title: j.id, subtitle: `${j.route} — ${j.status}`, group: 'Jobs', icon: Briefcase, to: `/app/jobs` })),
-    ...trips.map((t) => ({ id: t.id, title: t.id, subtitle: `${t.route} — ${t.status}`, group: 'Trips', icon: Route, to: `/app/trips/${t.id}` })),
-    ...vehicles.map((v) => ({ id: v.id, title: `${v.unitNumber} — ${v.registration}`, subtitle: `${v.type} — ${v.status}`, group: 'Vehicles', icon: Truck, to: `/app/fleet/vehicles/${v.id}` })),
-    ...drivers.map((d) => ({ id: d.id, title: d.name, subtitle: `${d.licenseNumber} — ${d.status}`, group: 'Drivers', icon: UserRound, to: `/app/fleet/drivers/${d.id}` })),
-    ...customers.map((c) => ({ id: c.id, title: c.name, subtitle: `${c.city} — ${c.industry}`, group: 'Customers', icon: Building2, to: `/app/rrr` })),
-    ...invoices.map((i) => ({ id: i.id, title: i.id, subtitle: `${i.status} — Due ${i.dueDate}`, group: 'Invoices', icon: FileText, to: `/app/finance/invoices` })),
-    ...workshops.map((w) => ({ id: w.id, title: w.name, subtitle: `${w.city} — ${w.type}`, group: 'Workshops', icon: Wrench, to: `/app/maintenance/workshops` })),
-    ...parts.map((p) => ({ id: p.id, title: p.name, subtitle: `${p.sku} — ${p.status}`, group: 'Parts', icon: PackageSearch, to: `/app/maintenance/parts` })),
-  ];
-}
-
-const INDEX = buildIndex();
-
+/**
+ * Real, live search across the actual database — queried on every keystroke
+ * (debounced) rather than built once from a static in-memory index. Each
+ * section is skipped if the signed-in user lacks the matching view permission.
+ */
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { can } = useAuth();
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) setQuery('');
   }, [open]);
 
-  const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return INDEX.filter((r) => r.title.toLowerCase().includes(q) || r.subtitle.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)).slice(0, 24);
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setResults([]); return; }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      setLoading(true);
+      const tasks: Promise<SearchResult[]>[] = [];
+
+      if (can('rrr:view')) tasks.push(rrrApi.list({ q, limit: 6 }, ctrl.signal).then((r) => r.items.map((x) => ({ id: x.id, title: x.ref, subtitle: `${x.pickup} → ${x.destination} — ${x.status}`, group: 'RRR', icon: ClipboardList, to: `/app/rrr/${x.id}` }))).catch(() => []));
+      if (can('jobs:view')) tasks.push(opsApi.jobs.list({ q, limit: 6 }, ctrl.signal).then((r) => r.items.map((x) => ({ id: x.id, title: x.ref, subtitle: `${x.pickup} → ${x.destination} — ${x.status}`, group: 'Jobs', icon: Briefcase, to: '/app/jobs' }))).catch(() => []));
+      if (can('trips:view')) tasks.push(opsApi.trips.list({ q, limit: 6 }, ctrl.signal).then((r) => r.items.map((x) => ({ id: x.id, title: x.ref, subtitle: `${x.route} — ${x.status}`, group: 'Trips', icon: Route, to: `/app/trips/${x.id}` }))).catch(() => []));
+      if (can('fleet:view')) {
+        tasks.push(opsApi.vehicles.list({ q, limit: 6 }, ctrl.signal).then((r) => r.items.map((x) => ({ id: x.id, title: `${x.unitNumber} — ${x.registration}`, subtitle: `${x.type} — ${x.status}`, group: 'Vehicles', icon: Truck, to: `/app/fleet/vehicles/${x.id}` }))).catch(() => []));
+        tasks.push(opsApi.drivers.list({ q, limit: 6 }, ctrl.signal).then((r) => r.items.map((x) => ({ id: x.id, title: x.name, subtitle: `${x.licenseNumber} — ${x.status}`, group: 'Drivers', icon: UserRound, to: `/app/fleet/drivers/${x.id}` }))).catch(() => []));
+      }
+      if (can('rrr:view')) {
+        tasks.push(rrrApi.customers(ctrl.signal).then((r) => r.items
+          .filter((c) => c.name.toLowerCase().includes(q.toLowerCase()) || (c.city ?? '').toLowerCase().includes(q.toLowerCase()))
+          .slice(0, 6)
+          .map((c) => ({ id: c.id, title: c.name, subtitle: [c.city, c.industry].filter(Boolean).join(' — '), group: 'Customers', icon: Building2, to: '/app/rrr' }))).catch(() => []));
+      }
+      if (can('finance:view')) {
+        tasks.push(opsApi.invoices.list({ limit: 200 }, ctrl.signal).then((r) => r.items
+          .filter((i) => i.ref.toLowerCase().includes(q.toLowerCase()) || i.customerName.toLowerCase().includes(q.toLowerCase()))
+          .slice(0, 6)
+          .map((i) => ({ id: i.id, title: i.ref, subtitle: `${i.status} — ${i.customerName}`, group: 'Invoices', icon: FileText, to: '/app/finance/invoices' }))).catch(() => []));
+      }
+      if (can('maintenance:view')) {
+        tasks.push(opsApi.workshops.list(ctrl.signal).then((r) => r.items
+          .filter((w) => w.name.toLowerCase().includes(q.toLowerCase()))
+          .slice(0, 6)
+          .map((w) => ({ id: w.id, title: w.name, subtitle: [w.city, w.type].filter(Boolean).join(' — '), group: 'Workshops', icon: Wrench, to: '/app/maintenance/workshops' }))).catch(() => []));
+        tasks.push(opsApi.parts.list(ctrl.signal).then((r) => r.items
+          .filter((p) => p.name.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
+          .slice(0, 6)
+          .map((p) => ({ id: p.id, title: p.name, subtitle: `${p.sku} — ${p.status}`, group: 'Parts', icon: PackageSearch, to: '/app/maintenance/parts' }))).catch(() => []));
+      }
+
+      Promise.all(tasks).then((groups) => setResults(groups.flat())).finally(() => setLoading(false));
+    }, 250);
+    return () => { clearTimeout(t); ctrl.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   const grouped = useMemo(() => {
@@ -95,7 +119,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
               {!query.trim() && (
                 <p className="px-3 py-8 text-center text-sm text-slate-400">Start typing to search across the entire platform</p>
               )}
-              {query.trim() && grouped.length === 0 && (
+              {query.trim() && !loading && grouped.length === 0 && (
                 <p className="px-3 py-8 text-center text-sm text-slate-400">No results for "{query}"</p>
               )}
               {grouped.map(([group, items]) => (

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Disc, Download, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Disc, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Toolbar } from '@/components/ui/Toolbar';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -8,32 +8,49 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/ui/Badge';
 import { DataTable, type Column } from '@/components/ui/DataTable';
-import { tyres } from '@/data/tyres';
-import { getVehicle } from '@/data/vehicles';
-import type { Tyre } from '@/data/types';
+import { Modal } from '@/components/ui/Modal';
+import { Field, Input, Select as FieldSelect } from '@/components/ui/Field';
+import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/lib/auth';
+import { ApiError } from '@/lib/apiClient';
+import { opsApi, TYRE_STATUSES, type Tyre, type Vehicle } from '@/lib/opsApi';
 import { cn, formatCurrency } from '@/lib/utils';
 
-const STATUS_OPTIONS = ['In Service', 'In Stock', 'Retreaded', 'Scrapped'];
-
 export function TyresPage() {
+  const { can } = useAuth();
+  const toast = useToast();
+  const [tyres, setTyres] = useState<Tyre[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  function load() {
+    setLoading(true);
+    Promise.all([opsApi.tyres.list(), opsApi.vehicles.list({ limit: 200 })])
+      .then(([t, v]) => { setTyres(t.items); setVehicles(v.items); })
+      .finally(() => setLoading(false));
+  }
+  useEffect(load, []);
 
   const filtered = useMemo(() => tyres.filter((t) => {
     if (status && t.status !== status) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!`${t.brand} ${t.serial} ${getVehicle(t.vehicleId)?.unitNumber}`.toLowerCase().includes(q)) return false;
+      if (!`${t.brand} ${t.serial} ${t.vehicleRef ?? ''}`.toLowerCase().includes(q)) return false;
     }
     return true;
-  }), [search, status]);
+  }), [tyres, search, status]);
 
-  const summary = useMemo(() => ({
-    inService: tyres.filter((t) => t.status === 'In Service').length,
+  const inService = tyres.filter((t) => t.status === 'In Service');
+  const summary = {
+    inService: inService.length,
     inStock: tyres.filter((t) => t.status === 'In Stock').length,
-    avgTread: (tyres.filter((t) => t.status === 'In Service').reduce((s, t) => s + t.treadDepth, 0) / Math.max(1, tyres.filter((t) => t.status === 'In Service').length)).toFixed(1),
-    lowTread: tyres.filter((t) => t.status === 'In Service' && t.treadDepth < 4).length,
-  }), []);
+    avgTread: inService.length ? (inService.reduce((s, t) => s + (t.treadDepth ?? 0), 0) / inService.length).toFixed(1) : '—',
+    lowTread: inService.filter((t) => (t.treadDepth ?? 99) < 4).length,
+  };
 
   const columns: Column<Tyre>[] = [
     { key: 'serial', header: 'Tyre', render: (t) => (
@@ -45,28 +62,40 @@ export function TyresPage() {
         </div>
       </div>
     ) },
-    { key: 'vehicle', header: 'Vehicle', render: (t) => t.vehicleId ? <span className="text-slate-600">{getVehicle(t.vehicleId)?.unitNumber}</span> : <span className="text-xs text-slate-400">Warehouse</span> },
-    { key: 'position', header: 'Position', render: (t) => <span className="text-slate-600">{t.position}</span> },
+    { key: 'vehicle', header: 'Vehicle', render: (t) => t.vehicleRef ? <span className="text-slate-600">{t.vehicleRef}</span> : <span className="text-xs text-slate-400">Warehouse</span> },
+    { key: 'position', header: 'Position', render: (t) => <span className="text-slate-600">{t.position ?? '—'}</span> },
     { key: 'tread', header: 'Tread Depth', render: (t) => {
-      const pct = Math.min(100, (t.treadDepth / 14) * 100);
+      const depth = t.treadDepth ?? 0;
+      const pct = Math.min(100, (depth / 14) * 100);
       return (
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
-            <span className={cn('block h-full rounded-full', t.treadDepth > 6 ? 'bg-emerald-500' : t.treadDepth > 3 ? 'bg-amber-500' : 'bg-rose-500')} style={{ width: `${pct}%` }} />
+            <span className={cn('block h-full rounded-full', depth > 6 ? 'bg-emerald-500' : depth > 3 ? 'bg-amber-500' : 'bg-rose-500')} style={{ width: `${pct}%` }} />
           </span>
-          <span className="text-xs text-slate-500">{t.treadDepth} mm</span>
+          <span className="text-xs text-slate-500">{depth} mm</span>
         </div>
       );
     } },
-    { key: 'installKm', header: 'Install KM', align: 'right', render: (t) => t.installKm.toLocaleString() },
-    { key: 'removalKm', header: 'Removal KM', align: 'right', render: (t) => t.removalKm ? t.removalKm.toLocaleString() : '—' },
-    { key: 'cost', header: 'Cost', align: 'right', accessor: (t) => t.cost, sortable: true, render: (t) => formatCurrency(t.cost) },
-    { key: 'costPerKm', header: 'Cost / KM', align: 'right', render: (t) => {
-      const km = (t.removalKm ?? 0) - t.installKm;
-      return km > 0 ? `${(t.cost / km).toFixed(2)} AED` : '—';
-    } },
+    { key: 'cost', header: 'Cost', align: 'right', render: (t) => t.cost != null ? formatCurrency(t.cost) : '—' },
     { key: 'status', header: 'Status', render: (t) => <StatusBadge status={t.status} /> },
   ];
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitting(true);
+    const fd = new FormData(e.currentTarget);
+    const body = Object.fromEntries([...fd.entries()].filter(([, v]) => v !== ''));
+    try {
+      await opsApi.tyres.create(body);
+      toast({ type: 'success', title: 'Tyre recorded' });
+      setShowNew(false);
+      load();
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not record tyre', description: err instanceof ApiError ? err.message : undefined });
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div>
@@ -74,10 +103,7 @@ export function TyresPage() {
         title="Tyre Management"
         description="Tyre lifecycle tracking from installation through retreading or replacement."
         breadcrumbs={[{ label: 'Maintenance' }, { label: 'Tyres' }]}
-        actions={<>
-          <Button variant="secondary" size="sm" icon={Download}>Export</Button>
-          <Button variant="primary" size="sm" icon={Plus}>Record Tyre Change</Button>
-        </>}
+        actions={can('maintenance:manage') ? <Button variant="primary" size="sm" icon={Plus} onClick={() => setShowNew(true)}>Record Tyre</Button> : undefined}
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -89,13 +115,34 @@ export function TyresPage() {
 
       <Toolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search brand, serial, vehicle..." className="sm:max-w-xs" />
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))} placeholder="All Statuses" className="sm:w-44" />
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} options={TYRE_STATUSES.map((s) => ({ label: s, value: s }))} placeholder="All Statuses" className="sm:w-44" />
         {(search || status) && <button onClick={() => { setSearch(''); setStatus(''); }} className="text-xs font-medium text-slate-500 hover:text-brand-700 sm:ml-auto">Clear filters</button>}
       </Toolbar>
 
       <Card>
-        <DataTable columns={columns} data={filtered} keyField={(t) => t.id} pageSize={10} />
+        <DataTable columns={columns} data={filtered} keyField={(t) => t.id} loading={loading} pageSize={filtered.length || 10} emptyTitle="No tyres recorded yet" />
       </Card>
+
+      <Modal open={showNew} onClose={() => setShowNew(false)} title="Record a tyre" size="sm">
+        <form id="new-tyre-form" onSubmit={onSubmit} className="space-y-4" noValidate>
+          <Field label="Brand" required><Input name="brand" required /></Field>
+          <Field label="Size" required><Input name="size" required placeholder="295/80R22.5" /></Field>
+          <Field label="Serial" required><Input name="serial" required /></Field>
+          <Field label="Vehicle (leave blank for warehouse stock)">
+            <FieldSelect name="vehicleId" options={vehicles.map((v) => ({ label: v.unitNumber, value: v.id }))} placeholder="Warehouse" />
+          </Field>
+          <Field label="Position"><Input name="position" placeholder="Front Left" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Install KM"><Input name="installKm" type="number" /></Field>
+            <Field label="Tread Depth (mm)"><Input name="treadDepth" type="number" step="0.1" /></Field>
+          </div>
+          <Field label="Cost"><Input name="cost" type="number" /></Field>
+        </form>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" type="button" onClick={() => setShowNew(false)}>Cancel</Button>
+          <Button form="new-tyre-form" type="submit" loading={submitting}>Save tyre</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

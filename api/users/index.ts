@@ -1,11 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { collection } from '../_lib/db.js';
+import { randomBytes } from 'node:crypto';
+import { collection, getDb, ensureIndexes } from '../_lib/db.js';
 import { COLLECTIONS, ROLE_PERMISSIONS, type AuditLogDoc, type UserDoc } from '../_lib/models.js';
-import { conflict, json, route } from '../_lib/http.js';
+import { badRequest, conflict, forbidden, json, route } from '../_lib/http.js';
 import { requireAuth, requirePermission, hashPassword } from '../_lib/auth.js';
 import { validate } from '../_lib/validation.js';
 import { writeAudit } from '../_lib/audit.js';
 import { intParam, stringParam } from '../_lib/params.js';
+import { env } from '../_lib/env.js';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS);
 
@@ -38,7 +40,12 @@ export default route({
     });
   },
 
+  // POST /api/users                -> create a staff user (requires users:manage)
+  // POST /api/users?scope=seed     -> one-time bootstrap (was api/admin/seed.ts — merged
+  //                                    here to stay under Vercel's 12-function limit)
   POST: async (req, res) => {
+    if (stringParam(req, 'scope') === 'seed') return seedAdmin(req, res);
+
     const session = await requirePermission(req, 'users:manage');
     const body = validate<{ name: string; email: string; role: string; password: string }>(
       {
@@ -71,6 +78,63 @@ export default route({
     json(res, 201, { user: { id: String(result.insertedId), name: doc.name, email: doc.email, role: doc.role, status: doc.status } });
   },
 });
+
+/**
+ * One-time bootstrap: creates all indexes and the first admin user.
+ * Protected by the SEED_SECRET env var (not by users:manage — no admin
+ * exists yet the first time this runs). Safe to call repeatedly — it will
+ * not create a second admin and never resets an existing password.
+ *
+ *   POST /api/users?scope=seed
+ *   x-seed-secret: <SEED_SECRET>
+ *   { "email": "you@company.com", "name": "Your Name", "password"?: "optional" }
+ */
+async function seedAdmin(req: VercelRequest, res: VercelResponse) {
+  if (!env.seedSecret) throw badRequest('SEED_SECRET is not configured on the server');
+  const provided = req.headers['x-seed-secret'];
+  if (provided !== env.seedSecret) throw forbidden('Invalid seed secret');
+
+  const body = validate<{ email: string; name: string; password?: string }>(
+    {
+      email: { type: 'email', required: true },
+      name: { type: 'string', required: true, min: 2, max: 80 },
+      password: { type: 'string', min: 10, max: 200 },
+    },
+    req.body,
+  );
+
+  const db = await getDb();
+  await ensureIndexes(db);
+
+  const users = await collection<UserDoc>(COLLECTIONS.users);
+  const existingAdmin = await users.findOne({ role: 'admin' });
+  if (existingAdmin) {
+    json(res, 200, { ok: true, message: 'Indexes ensured. An admin user already exists — no changes made.', adminEmail: existingAdmin.email });
+    return;
+  }
+
+  const generatedPassword = body.password ?? randomBytes(9).toString('base64url');
+  const now = new Date();
+  const doc: UserDoc = {
+    name: body.name,
+    email: body.email.toLowerCase(),
+    passwordHash: await hashPassword(generatedPassword),
+    role: 'admin',
+    status: 'active',
+    avatarColor: '#0b475b',
+    createdAt: now,
+    updatedAt: now,
+  };
+  await users.insertOne(doc);
+  await writeAudit({ actor: null, action: 'admin.seed', entity: 'user', entityId: doc.email, req });
+
+  json(res, 201, {
+    ok: true,
+    message: 'Admin user created and indexes ensured.',
+    adminEmail: doc.email,
+    generatedPassword: body.password ? undefined : generatedPassword,
+  });
+}
 
 async function listAudit(req: VercelRequest, res: VercelResponse) {
   await requirePermission(req, 'audit:view');

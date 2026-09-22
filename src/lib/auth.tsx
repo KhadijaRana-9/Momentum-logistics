@@ -6,7 +6,14 @@ export type Permission =
   | 'followups:view' | 'followups:manage'
   | 'analytics:view' | 'content:manage' | 'campaigns:manage'
   | 'chatbot:manage' | 'integrations:manage' | 'users:manage' | 'audit:view'
-  | 'rrr:view' | 'rrr:create' | 'rrr:edit' | 'rrr:approve';
+  | 'rrr:view' | 'rrr:create' | 'rrr:edit' | 'rrr:approve'
+  | 'jobs:view' | 'jobs:manage'
+  | 'dispatch:view' | 'dispatch:manage'
+  | 'trips:view' | 'trips:manage'
+  | 'fleet:view' | 'fleet:manage'
+  | 'maintenance:view' | 'maintenance:manage'
+  | 'finance:view' | 'finance:manage'
+  | 'alerts:view';
 
 export interface AuthUser {
   id: string;
